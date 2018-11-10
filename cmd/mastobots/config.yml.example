@@ -1,0 +1,54 @@
+MastoAppName: mastobots #「認証済みアプリ」にリストされるアプリ名
+
+DBCredentials:  # MySQLデータベース接続のための資格情報（環境に応じて要変更）
+    Database: rss
+    Password: ****************
+    Server: localhost:3306
+    User: rss
+
+Personae:   # 各botの情報
+    -   Name: mybot
+        Instance: https://example.com
+        Email: mybot@mymail.com
+        Password: ***************
+        WakeHour: 6     # 起きる時刻（時）
+        WakeMin: 0      # 起きる時刻（分）
+        SleepHour: 22   # 寝る時刻（時）
+        SleepMin: 0     # 寝る時刻（分）
+        FirstFire: 0    # 定期トゥートを開始する分
+        Interval: 60    # 定期トゥートの間隔（分単位）
+        Assertion: です   # メンションに返事するときの文末表現
+        Starter: あ、     # メンションに返事するときの文頭
+        Title: さん       # 人の名を呼ぶときに後ろに付ける
+        Hashtags:       # ハッシュタグを一つずつ列挙（シャープ記号は不要）
+            - mybot
+            - news
+        Keywords:       # botが興味を示す単語。動詞や形容詞は原形で
+            - マストドン
+            - ツイッター
+        Comments:       # トゥート本文を列挙
+            - _keyword1_は最高             # "_keyword1_" は、RSSアイテムの中から適当に拾った名詞で置換される。
+            - _topkana1_、_keyword1_ですか  # "_topkana1_" は、その名詞の最初の読みがなに置換される。
+
+    -   Name: mybot2
+        Instance: https://example.com
+        Email: mybot2@mymail2.com
+        Password: ***************
+        WakeHour: 6
+        WakeMin: 0
+        SleepHour: 22
+        SleepMin: 0
+        FirstFire: 0
+        Interval: 60
+        Assertion: ナリ
+        Starter: おお、
+        Title: どの
+        Hashtags:
+            - mybot
+            - news
+        Keywords:
+            - フェイスブック
+            - ミクシィ
+        Comments:
+            - _keyword1_はねえ……
+            - _topkana1_、_keyword1_ナリか

@@ -1,0 +1,4 @@
+cmd/**/*.yml
+cmd/test
+cmd/mastobots/mastobots
+*.backup
