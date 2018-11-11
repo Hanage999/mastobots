@@ -2,6 +2,7 @@ package mastobots
 
 import (
 	"bytes"
+	"errors"
 	"golang.org/x/net/html"
 	"log"
 	"os/exec"
@@ -53,7 +54,11 @@ func parse(text string) (result parseResult, err error) {
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	if err = cmd.Run(); err != nil {
-		log.Printf("info: 形態素解析に失敗しました。\n")
+		log.Printf("info: 形態素解析器が正常に起動できませんでした。\n")
+		return
+	}
+	if strings.Contains(out.String(), "backtrace:") {
+		err = errors.New("info: 形態素解析器がエラーを吐きました。")
 		return
 	}
 

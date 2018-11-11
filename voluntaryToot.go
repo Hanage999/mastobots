@@ -20,7 +20,6 @@ LOOP:
 		select {
 		case <-tc:
 			toot, item, err := bot.createNewsToot(db)
-
 			if err != nil {
 				log.Printf("%s がトゥートの作成に失敗しました。\n", bot.Name)
 			}
@@ -63,7 +62,10 @@ func (bot *Persona) createNewsToot(db *DB) (toot mastodon.Toot, item Item, err e
 	if err != nil {
 		log.Printf("info: %s が投稿文の作成に失敗しました。\n", bot.Name)
 	}
-	toot = mastodon.Toot{Status: msg}
+
+	if msg != "" {
+		toot = mastodon.Toot{Status: msg}
+	}
 
 	return
 }
@@ -130,7 +132,7 @@ func (bot *Persona) messageFromItem(item Item) (msg string, err error) {
 	// リンクとハッシュタグを追加
 	msg += "\n\n【" + item.Title + "】 " + item.URL + "\n\n" + hashtagStr
 
-	log.Printf("%s", msg)
+	log.Printf("info: %s", msg)
 
 	return
 }
