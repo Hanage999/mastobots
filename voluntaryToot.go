@@ -2,12 +2,14 @@ package mastobots
 
 import (
 	"context"
+	"errors"
 	"github.com/mattn/go-mastodon"
 	"log"
 	"math/rand"
 	"regexp"
 	"strings"
 	"time"
+//	"unicode/utf8"
 )
 
 // periodicTootは、指定された時刻（分）を皮切りに一定時間ごとにトゥートする。
@@ -22,6 +24,7 @@ LOOP:
 			toot, item, err := bot.createNewsToot(db)
 			if err != nil {
 				log.Printf("%s がトゥートの作成に失敗しました。\n", bot.Name)
+				break
 			}
 			if item.Title != "" {
 				if err := bot.post(ctx, toot); err != nil {
@@ -60,7 +63,8 @@ func (bot *Persona) createNewsToot(db *DB) (toot mastodon.Toot, item Item, err e
 	// 投稿トゥート作成
 	msg, err := bot.messageFromItem(item)
 	if err != nil {
-		log.Printf("info: %s が投稿文の作成に失敗しました。\n", bot.Name)
+		log.Printf("info: %s がアイテムid %d から投稿文の作成に失敗しました。\n", bot.Name, item.ID)
+		return
 	}
 
 	if msg != "" {
@@ -76,7 +80,7 @@ func (bot *Persona) messageFromItem(item Item) (msg string, err error) {
 	if item.Summary != txt {
 		txt = txt + "。" + textContent(item.Summary)
 	}
-	log.Printf("info: 素のsummary：%s\n", txt)
+	log.Printf("trace: 素のsummary：%s\n", txt)
 
 	// 2ちゃんねるヘッダー除去
 	rep := regexp.MustCompile(`\d+[:：]?.*\d{4}\/\d{2}\/\d{2}\(.\) *\d{2}:\d{2}:\d{2}(\.\d+)?( ID:[ -~｡-ﾟ]+)?`)
@@ -86,12 +90,7 @@ func (bot *Persona) messageFromItem(item Item) (msg string, err error) {
 	rep = regexp.MustCompile(`(http(s)?:\/\/)?([\w\-]+\.)+[\w-]+(\/[\w\- .\/?%&=]*)?`)
 	txt = rep.ReplaceAllString(txt, "　")
 
-	// その他の調整
-	rep = regexp.MustCompile(`(\t|\s|\n|\r|\f|\v)`)
-	txt = rep.ReplaceAllString(txt, "　")
-	strings.Replace(txt, "…。", "…　。", -1)
-
-	log.Printf("info: Jumanに食わせるsummary：%s\n\n", txt)
+	log.Printf("trace: id %d Jumanに食わせるsummary：%s\n\n", item.ID, txt)
 
 	result, err := parse(txt)
 	if err != nil {
@@ -102,6 +101,14 @@ func (bot *Persona) messageFromItem(item Item) (msg string, err error) {
 	// トゥートに使う単語の選定
 	candidates := make([]candidate, 0)
 	for _, node := range result.Nodes {
+		if len(node) < 7 {
+			log.Println(node)
+			if node[0] == "#" {
+				err = errors.New("jumanppでエラーが発生しました。")
+				return "", err
+			}
+			continue
+		}
 		if node[4] != "普通名詞" && node[4] != "組織名" && node[4] != "人名" && node[4] != "地名" {
 			continue
 		}
@@ -132,7 +139,7 @@ func (bot *Persona) messageFromItem(item Item) (msg string, err error) {
 	// リンクとハッシュタグを追加
 	msg += "\n\n【" + item.Title + "】 " + item.URL + "\n\n" + hashtagStr
 
-	log.Printf("info: %s", msg)
+	log.Printf("trace: %s のトゥート内容：\n\n%s", bot.Name, msg)
 
 	return
 }
