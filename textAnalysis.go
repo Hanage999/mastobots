@@ -44,7 +44,13 @@ func textContent(s string) string {
 	extractText(doc, &buf)
 
 	// 改行のない長文はJumanppに食わせるとエラーになるので、句点で強制改行
-	return strings.Replace(buf.String(), "。", "。\n", -1)
+	safestring := buf.String()
+	if safestring != "" {
+		safestring = strings.Replace(safestring, "。\n", "。", -1)
+		safestring = strings.Replace(safestring, "。", "。\n", -1)
+	}
+
+	return safestring
 }
 
 // parseは、Juman++で文字列を形態素解析して結果を返す。
@@ -62,23 +68,29 @@ func parse(text string) (result parseResult, err error) {
 	// 解析結果をスライスに整理（スペースとアンダースコアは除外）
 	nodeStrs := strings.Fields(out.String())
 	nodes := make([][]string, 0)
+	strange := false
 	for _, s := range nodeStrs {
 		if strings.HasPrefix(s, "_") {
 			continue
 		}
 		node := strings.Split(s, "_")
 		if len(node) < 7 {
-			log.Println("info: 異常なjumanpp解析結果", node)
+			strange = true
+			log.Println("info: 異常なjumanpp解析結果：", node)
 			if node[0] == "#" {
 				err = errors.New("jumanppでエラーが発生しました。")
 				log.Printf("info: %s", err)
-				return
+				break
 			}
 			continue
 		}
 		nodes = append(nodes, node)
 	}
 	result = parseResult{nodes}
+
+	if strange {
+		log.Printf("info: 解析異常が出たテキスト：%s", text)
+	}
 
 	return
 }

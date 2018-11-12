@@ -54,7 +54,7 @@ func until(hour, min int) (dur time.Duration) {
 		t = t.Add(add)
 	}
 
-	dur = time.Until(t)
+	dur = t.Sub(now)
 
 	return
 }
