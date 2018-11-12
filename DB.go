@@ -31,14 +31,14 @@ func newDB(cr map[string]string) (db *DB, err error) {
 		cr["database"]+
 		"?parseTime=true&loc=Asia%2FTokyo")
 	if err != nil {
-		log.Printf("alert: データベースがOpenできませんでした。\n")
-		return nil, err
+		log.Printf("alert: データベースがOpenできませんでした。：%s\n", err)
+		return db, err
 	}
 
 	// 接続確認
 	if err := dbase.Ping(); err != nil {
-		log.Printf("alert: データベースに接続できませんでした。\n")
-		return nil, err
+		log.Printf("alert: データベースに接続できませんでした。：%s\n", err)
+		return db, err
 	}
 
 	db = &DB{dbase}
@@ -63,7 +63,7 @@ func (db *DB) addNewBots(bots []*Persona) (err error) {
 		params...,
 	)
 	if err != nil {
-		log.Printf("info: botテーブルが更新できませんでした。\n")
+		log.Printf("info: botテーブルが更新できませんでした。：%s\n", err)
 		return
 	}
 
@@ -73,7 +73,7 @@ func (db *DB) addNewBots(bots []*Persona) (err error) {
 		AUTO_INCREMENT = 1
 	`)
 	if err != nil {
-		log.Printf("info: itemsテーブルの自動採番値が調整できませんでした。\n")
+		log.Printf("info: itemsテーブルの自動採番値が調整できませんでした。：%s\n", err)
 		return
 	}
 
@@ -93,7 +93,7 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 			name = ?`,
 		bot.Name,
 	).Scan(&checkedUntil); err != nil {
-		log.Printf("info: botsテーブルから %s の情報取得に失敗しました。\n", bot.Name)
+		log.Printf("info: botsテーブルから %s の情報取得に失敗しました。：%s\n", bot.Name, err)
 		return err
 	}
 
@@ -110,7 +110,7 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 		checkedUntil,
 	)
 	if err != nil {
-		log.Printf("info: itemsテーブルから %s の趣味を集め損ねました。\n", bot.Name)
+		log.Printf("info: itemsテーブルから %s の趣味を集め損ねました。：%s\n", bot.Name, err)
 		return
 	}
 	defer rows.Close()
@@ -121,14 +121,14 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 		var id int
 		var title, url, summary string
 		if err := rows.Scan(&id, &title, &url, &summary); err != nil {
-			log.Printf("info: itemsテーブルから一行の情報取得に失敗しました。\n")
+			log.Printf("info: itemsテーブルから一行の情報取得に失敗しました。：%s\n", err)
 			continue
 		}
 		items = append(items, Item{id, title, url, summary})
 	}
 	err = rows.Err()
 	if err != nil {
-		log.Printf("info: itemテーブルへの接続に結局失敗しました。\n")
+		log.Printf("info: itemテーブルへの接続に結局失敗しました。：%s\n", err)
 		return
 	}
 	rows.Close()
@@ -143,7 +143,7 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 
 		result, err := parse(sumStr)
 		if err != nil {
-			log.Printf("info: サマリーのパースに失敗しました。id: %d\n", item.ID)
+			log.Printf("info: id: %d のサマリーのパースに失敗しました。\n", item.ID)
 			continue
 		}
 
@@ -176,7 +176,7 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 			params...,
 		)
 		if err != nil {
-			log.Printf("info: candidatesテーブルが更新できませんでした。\n")
+			log.Printf("info: candidatesテーブルが更新できませんでした。：%s\n", err)
 			return
 		}
 	}
@@ -194,7 +194,7 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 		bot.DBID,
 	)
 	if err != nil {
-		log.Printf("info: %s のchecked_untilが更新できませんでした。\n", bot.Name)
+		log.Printf("info: %s のchecked_untilが更新できませんでした。%s\n", bot.Name, err)
 	}
 
 	return
@@ -217,7 +217,7 @@ func (db *DB) pickItem(bot *Persona) (item Item, err error) {
 		bot.DBID,
 	)
 	if err != nil {
-		log.Printf("info: %s の投稿候補を集め損ねました。\n", bot.Name)
+		log.Printf("info: %s の投稿候補を集め損ねました。%s\n", bot.Name, err)
 		return
 	}
 	defer rows.Close()
@@ -228,14 +228,14 @@ func (db *DB) pickItem(bot *Persona) (item Item, err error) {
 		var id int
 		var title, url, summary string
 		if err := rows.Scan(&id, &title, &url, &summary); err != nil {
-			log.Printf("info: itemsテーブルから一行の情報取得に失敗しました。\n")
+			log.Printf("info: itemsテーブルから一行の情報取得に失敗しました。%s\n", err)
 			continue
 		}
 		items = append(items, Item{id, title, url, summary})
 	}
 	err = rows.Err()
 	if err != nil {
-		log.Printf("info: itemテーブルへの接続に結局失敗しました。\n")
+		log.Printf("info: itemテーブルの行読み込みに結局失敗しました。：%s\n", err)
 		return
 	}
 	rows.Close()
@@ -268,7 +268,7 @@ func (db *DB) botID(bot *Persona) (id int, err error) {
 			name = ?`,
 		bot.Name,
 	).Scan(&id); err != nil {
-		log.Printf("info: botsテーブルから %s のID取得に失敗しました。\n", bot.Name)
+		log.Printf("info: botsテーブルから %s のID取得に失敗しました。：%s\n", bot.Name, err)
 		return
 	}
 	return
@@ -285,7 +285,7 @@ func (db *DB) deleteItem(bot *Persona, item Item) (err error) {
 		bot.DBID,
 	)
 	if err != nil {
-		log.Printf("alert: %s がcandidatesから%dの削除に失敗しました。\n", bot.Name, item.ID)
+		log.Printf("alert: %s がcandidatesから%dの削除に失敗しました。：%s\n", bot.Name, item.ID, err)
 	}
 
 	return

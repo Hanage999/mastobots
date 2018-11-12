@@ -16,7 +16,7 @@ func (bot *Persona) monitor(ctx context.Context) {
 	newCtx, cancel := context.WithCancel(ctx)
 	evch, err := bot.openStreaming(newCtx)
 	if err != nil {
-		log.Printf("info: %s がストリーミングを受信開始できませんでした：%s\n", bot.Name, err)
+		log.Printf("info: %s がストリーミングを受信開始できませんでした。\n", bot.Name)
 		return
 	}
 
@@ -26,13 +26,17 @@ LOOP:
 		case ev := <-evch:
 			switch t := ev.(type) {
 			case *mastodon.UpdateEvent:
-				if err := bot.respondToUpdate(newCtx, t); err != nil {
-					log.Printf("info: %s がトゥートに反応できませんでした。\n")
-				}
+				go func () {
+					if err := bot.respondToUpdate(newCtx, t); err != nil {
+						log.Printf("info: %s がトゥートに反応できませんでした。\n", bot.Name)
+					}
+				}()
 			case *mastodon.NotificationEvent:
-				if bot.respondToNotification(newCtx, t); err != nil {
-					log.Printf("info: %s が通知に反応できませんでした。\n")
-				}
+				go func () {
+					if err := bot.respondToNotification(newCtx, t); err != nil {
+						log.Printf("info: %s が通知に反応できませんでした。\n", bot.Name)
+					}
+				}()
 			case *mastodon.ErrorEvent:
 				cancel()
 				itv := rand.Intn(5000) + 1
@@ -93,7 +97,7 @@ func (bot *Persona) respondToUpdate(ctx context.Context, ev *mastodon.UpdateEven
 	for _, w := range bot.Keywords {
 		if result.contain(w) {
 			if err = bot.fav(ctx, ev.Status.ID); err != nil {
-				log.Printf("info: %s がふぁぼを諦めました：%s\n", bot.Name, err)
+				log.Printf("info: %s がふぁぼを諦めました。\n", bot.Name)
 				return
 			}
 			break
@@ -137,14 +141,14 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 	case strings.Contains(txt, "フォロー頼む"+bot.Assertion):
 		rel, err := bot.relationWith(ctx, account.ID)
 		if err != nil {
-			log.Printf("info: %s が関係取得に失敗しました。\n")
+			log.Printf("info: %s が関係取得に失敗しました。\n", bot.Name)
 			return err
 		}
 		if (*rel[0]).Following == true {
 			msg = "@" + account.Acct + " " + name + "さんはもうフォローしてるから大丈夫" + bot.Assertion + "よー"
 		} else {
 			if err = bot.follow(ctx, account.ID); err != nil {
-				log.Printf("info: %s がフォローに失敗しました。\n")
+				log.Printf("info: %s がフォローに失敗しました。\n", bot.Name)
 				return err
 			}
 			msg = "@" + account.Acct + " わーい、お友達" + bot.Assertion + "ね！これからは、" + name + "さんのトゥートを生温かく見守っていく" + bot.Assertion + "よー"
@@ -160,8 +164,8 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 	if msg != "" {
 		toot := mastodon.Toot{Status: msg, Visibility: status.Visibility, InReplyToID: status.ID}
 		if err = bot.post(ctx, toot); err != nil {
-			log.Printf("info: %s がリプライに失敗しました。\n")
-			return
+			log.Printf("info: %s がリプライに失敗しました。\n", bot.Name)
+			return err
 		}
 	}
 

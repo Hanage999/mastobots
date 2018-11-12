@@ -14,7 +14,8 @@ type MastoApp struct {
 	ClientSecret string
 }
 
-// initMastoAppは、新たに登録すべきマストドンクライアントアプリケーション登録し、そのスライスを返す。
+// initMastoAppは、新たに登録すべきマストドンクライアントアプリケーション登録し、
+// 新旧のアプリを全て含んだスライスを返す。
 func initMastoApps(apps []*MastoApp, appName, instance string) (updatedApps []*MastoApp, err error) {
 	for _, a := range apps {
 		if a.Server == instance && a.ClientID != "" && a.ClientSecret != "" {
@@ -44,6 +45,8 @@ func newMastoApp(name, instance string) (app MastoApp, err error) {
 		app.Server = instance
 		app.ClientID = newApp.ClientID
 		app.ClientSecret = newApp.ClientSecret
+	} else {
+		log.Printf("alert: マストドンアプリケーションが登録できませんでした。%s\n", err)
 	}
 	return
 }
@@ -58,5 +61,6 @@ func getApp(instance string, apps []*MastoApp) (app *MastoApp, err error) {
 	}
 
 	err = errors.New(instance + "のためのアプリが取得できませんでした。\n")
+	log.Printf("alert: %s", err)
 	return
 }

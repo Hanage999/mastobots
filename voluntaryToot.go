@@ -2,14 +2,12 @@ package mastobots
 
 import (
 	"context"
-	"errors"
 	"github.com/mattn/go-mastodon"
 	"log"
 	"math/rand"
 	"regexp"
 	"strings"
 	"time"
-//	"unicode/utf8"
 )
 
 // periodicTootは、指定された時刻（分）を皮切りに一定時間ごとにトゥートする。
@@ -21,20 +19,22 @@ LOOP:
 	for {
 		select {
 		case <-tc:
-			toot, item, err := bot.createNewsToot(db)
-			if err != nil {
-				log.Printf("%s がトゥートの作成に失敗しました。\n", bot.Name)
-				break
-			}
-			if item.Title != "" {
-				if err := bot.post(ctx, toot); err != nil {
-					log.Printf("info: %s がトゥートできませんでした。今回は諦めます……：%s\n", bot.Name, err)
-				} else {
-					if err := db.deleteItem(bot, item); err != nil {
-						log.Printf("info: %s がトゥート済みアイテムの削除に失敗しました。\n")
+			go func() {
+				toot, item, err := bot.createNewsToot(db)
+				if err != nil {
+					log.Printf("info :%s がトゥートの作成に失敗しました。\n", bot.Name)
+					return
+				}
+				if item.Title != "" {
+					if err := bot.post(ctx, toot); err != nil {
+						log.Printf("info: %s がトゥートできませんでした。今回は諦めます……\n", bot.Name)
+					} else {
+						if err := db.deleteItem(bot, item); err != nil {
+							log.Printf("info: %s がトゥート済みアイテムの削除に失敗しました。\n", bot.Name)
+						}
 					}
 				}
-			}
+			}()
 		case <-ctx.Done():
 			log.Printf("trace: %s が今日の定期トゥートを終了しました", bot.Name)
 			break LOOP
@@ -47,14 +47,14 @@ LOOP:
 func (bot *Persona) createNewsToot(db *DB) (toot mastodon.Toot, item Item, err error) {
 	// データベースから新規itemを物色してデータベースに登録
 	if err != db.stockItems(bot) {
-		log.Printf("info: %s がアイテムの収集に失敗しました：%s\n", bot.Name, err)
+		log.Printf("info: %s がアイテムの収集に失敗しました。\n", bot.Name)
 		return
 	}
 
 	// たまった候補からランダムに一つ選ぶ
 	item, err = db.pickItem(bot)
 	if err != nil {
-		log.Printf("info: %s が投稿アイテムを選択できませんでした。：%s\n", bot.Name, err)
+		log.Printf("info: %s が投稿アイテムを選択できませんでした。\n", bot.Name)
 	}
 	if item.Title == "" {
 		return
@@ -101,14 +101,6 @@ func (bot *Persona) messageFromItem(item Item) (msg string, err error) {
 	// トゥートに使う単語の選定
 	candidates := make([]candidate, 0)
 	for _, node := range result.Nodes {
-		if len(node) < 7 {
-			log.Println(node)
-			if node[0] == "#" {
-				err = errors.New("jumanppでエラーが発生しました。")
-				return "", err
-			}
-			continue
-		}
 		if node[4] != "普通名詞" && node[4] != "組織名" && node[4] != "人名" && node[4] != "地名" {
 			continue
 		}

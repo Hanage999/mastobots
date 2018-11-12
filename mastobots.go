@@ -97,7 +97,8 @@ func Initialize() (bots []*Persona, db *DB, err error) {
 	if dirtyConfig {
 		appConf.Set("MastoApps", apps)
 		if err := appConf.WriteConfig(); err != nil {
-			log.Printf("alert: アプリ設定ファイルが書き込めませんでした")
+			log.Printf("alert: アプリ設定ファイルが書き込めませんでした。：%s", err)
+			return nil, nil, err
 		}
 		log.Printf("info: 設定ファイルを更新しました。")
 	}

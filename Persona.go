@@ -38,7 +38,7 @@ func initPersona(apps []*MastoApp, bot *Persona) (err error) {
 
 	bot.MyApp, err = getApp(bot.Instance, apps)
 	if err != nil {
-		log.Printf("alert: %s のためのアプリが取得できませんでした。\n", bot.Name)
+		log.Printf("alert: %s のためのアプリが取得できませんでした。：%s\n", bot.Name)
 		return
 	}
 
@@ -50,13 +50,13 @@ func initPersona(apps []*MastoApp, bot *Persona) (err error) {
 
 	err = bot.Client.Authenticate(ctx, bot.Email, bot.Password)
 	if err != nil {
-		log.Printf("%s がアクセストークンの取得に失敗しました。\n", bot.Name)
+		log.Printf("%s がアクセストークンの取得に失敗しました。：%s\n", bot.Name, err)
 		return
 	}
 
 	acc, err := bot.Client.GetAccountCurrentUser(ctx)
 	if err != nil {
-		log.Printf("%s のアカウントIDが取得できませんでした。\n", bot.Name)
+		log.Printf("%s のアカウントIDが取得できませんでした。：%s\n", bot.Name, err)
 		return
 	}
 	bot.MyID = acc.ID
@@ -101,15 +101,17 @@ func (bot *Persona) life(ctx context.Context, db *DB) {
 			select {
 			case <-wakeTick:
 				newCtx, cancel = context.WithCancel(ctx)
-				toot := mastodon.Toot{Status: "おはようございます" + bot.Assertion}
-				if err := bot.post(newCtx, toot); err != nil {
-					log.Printf("info: %s がトゥートできませんでした。今回は諦めます……：%s\n", bot.Name, err)
-				}
 				bot.activities(newCtx, db)
+				go func () {
+					toot := mastodon.Toot{Status: "おはようございます" + bot.Assertion}
+					if err := bot.post(newCtx, toot); err != nil {
+						log.Printf("info: %s がトゥートできませんでした。今回は諦めます……\n", bot.Name)
+					}
+				}()
 			case <-sleepTick:
 				toot := mastodon.Toot{Status: "おやすみなさい" + bot.Assertion + "💤……"}
 				if err := bot.post(newCtx, toot); err != nil {
-					log.Printf("info: %s がトゥートできませんでした。今回は諦めます……：%s\n", bot.Name, err)
+					log.Printf("info: %s がトゥートできませんでした。今回は諦めます……\n", bot.Name)
 				}
 				cancel()
 			case <-ctx.Done():
@@ -133,7 +135,7 @@ func (bot *Persona) post(ctx context.Context, toot mastodon.Toot) (err error) {
 		_, err = bot.Client.PostStatus(ctx, &toot)
 		if err != nil {
 			time.Sleep(retryInterval)
-			log.Printf("info: %s がトゥートできませんでした。リトライします：%s\n", bot.Name, err)
+			log.Printf("info: %s がトゥートできませんでした。リトライします。：%s\n", bot.Name, err)
 			continue
 		}
 		break
@@ -149,7 +151,7 @@ func (bot *Persona) fav(ctx context.Context, id mastodon.ID) (err error) {
 		_, err = bot.Client.Favourite(ctx, id)
 		if err != nil {
 			time.Sleep(retryInterval)
-			log.Printf("info: %s がふぁぼれませんでした。リトライします：%s\n", bot.Name, err)
+			log.Printf("info: %s がふぁぼれませんでした。リトライします。：%s\n", bot.Name, err)
 			continue
 		}
 		break
@@ -165,7 +167,7 @@ func (bot *Persona) follow(ctx context.Context, id mastodon.ID) (err error) {
 		_, err = bot.Client.AccountFollow(ctx, id)
 		if err != nil {
 			time.Sleep(retryInterval)
-			log.Printf("info: %s がフォローできませんでした。リトライします：%s\n", bot.Name, err)
+			log.Printf("info: %s がフォローできませんでした。リトライします。：%s\n", bot.Name, err)
 			continue
 		}
 		break
@@ -180,7 +182,7 @@ func (bot *Persona) relationWith(ctx context.Context, id mastodon.ID) (rel []*ma
 		rel, err = bot.Client.GetAccountRelationships(ctx, []string{string(id)})
 		if err != nil {
 			time.Sleep(retryInterval)
-			log.Printf("info: %s と id:%s の関係が取得できませんでした。リトライします：%s\n", bot.Name, string(id), err)
+			log.Printf("info: %s と id:%s の関係が取得できませんでした。リトライします。：%s\n", bot.Name, string(id), err)
 			continue
 		}
 		break

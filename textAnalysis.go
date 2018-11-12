@@ -2,7 +2,7 @@ package mastobots
 
 import (
 	"bytes"
-//	"errors"
+	"errors"
 	"golang.org/x/net/html"
 	"log"
 	"os/exec"
@@ -54,7 +54,7 @@ func parse(text string) (result parseResult, err error) {
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	if err = cmd.Run(); err != nil {
-		log.Printf("info: 形態素解析器が正常に起動できませんでした。\n")
+		log.Printf("info: 形態素解析器が正常に起動できませんでした。：%s\n", err)
 		return
 	}
 
@@ -66,6 +66,15 @@ func parse(text string) (result parseResult, err error) {
 			continue
 		}
 		node := strings.Split(s, "_")
+		if len(node) < 7 {
+			log.Println("info: 異常なjumanpp解析結果", node)
+			if node[0] == "#" {
+				err = errors.New("jumanppでエラーが発生しました。")
+				log.Printf("info: %s", err)
+				return
+			}
+			continue
+		}
 		nodes = append(nodes, node)
 	}
 	result = parseResult{nodes}
@@ -76,9 +85,6 @@ func parse(text string) (result parseResult, err error) {
 // containは、形態素解析結果（基本形）に特定の単語が存在するかを調べる。
 func (result parseResult) contain(str string) bool {
 	for _, node := range result.Nodes {
-		if len(node) < 7 {
-			continue
-		}
 		// 3番目の要素が基本形
 		if node[2] == str {
 			return true
