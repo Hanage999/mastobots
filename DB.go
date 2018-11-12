@@ -2,7 +2,6 @@ package mastobots
 
 import (
 	"database/sql"
-	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"math/rand"
@@ -50,7 +49,7 @@ func newDB(cr map[string]string) (db *DB, err error) {
 func (db *DB) addNewBots(bots []*Persona) (err error) {
 	vsts := make([]string, 0)
 	params := make([]interface{}, 0)
-	now := fmt.Sprint(time.Now())
+	now := time.Now()
 	for _, bot := range bots {
 		vsts = append(vsts, "(?, ?, ?)")
 		params = append(params, bot.Name, now, now)
@@ -163,7 +162,7 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 	if len(myItems) > 0 {
 		vsts := make([]string, 0)
 		params := make([]interface{}, 0)
-		now := fmt.Sprint(time.Now())
+		now := time.Now()
 		for _, item := range myItems {
 			vsts = append(vsts, "(?, ?, ?, ?)")
 			params = append(params, bot.DBID, item.ID, now, now)
