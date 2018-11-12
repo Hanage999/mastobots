@@ -43,7 +43,8 @@ func textContent(s string) string {
 	}
 	extractText(doc, &buf)
 
-	return buf.String()
+	// 改行のない長文はJumanppに食わせるとエラーになるので、句点で強制改行
+	return strings.Replace(buf.String(), "。", "。\n", -1)
 }
 
 // parseは、Juman++で文字列を形態素解析して結果を返す。
