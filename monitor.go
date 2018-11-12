@@ -78,8 +78,7 @@ func (bot *Persona) respondToUpdate(ctx context.Context, ev *mastodon.UpdateEven
 	}
 
 	// 自分のトゥートは無視
-	uid := ev.Status.Account.ID
-	if uid == bot.MyID {
+	if ev.Status.Account.ID == bot.MyID {
 		return
 	}
 
