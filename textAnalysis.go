@@ -43,9 +43,11 @@ func textContent(s string) string {
 	}
 	extractText(doc, &buf)
 
-	// 改行のない長文はJumanppに食わせるとエラーになるので、句点で強制改行
 	safestring := buf.String()
 	if safestring != "" {
+		// シャープはJuman++の特殊記号らしいので全角に変換
+		safestring = strings.Replace(safestring, `#`, "＃", -1)
+		// 改行のない長文はJumanppに食わせるとエラーになるので、句点で強制改行
 		safestring = strings.Replace(safestring, "。\n", "。", -1)
 		safestring = strings.Replace(safestring, "。", "。\n", -1)
 	}

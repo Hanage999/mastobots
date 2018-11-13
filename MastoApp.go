@@ -41,13 +41,15 @@ func newMastoApp(name, instance string) (app MastoApp, err error) {
 		Scopes:     "read write follow",
 		Website:    "https://github.com/hanage999/mastobots",
 	})
-	if err == nil {
-		app.Server = instance
-		app.ClientID = newApp.ClientID
-		app.ClientSecret = newApp.ClientSecret
-	} else {
-		log.Printf("alert: マストドンアプリケーションが登録できませんでした。%s\n", err)
+	if err != nil {
+		log.Printf("alert: マストドンアプリケーションが新規登録できませんでした。%s\n", err)
+		return
 	}
+
+	app.Server = instance
+	app.ClientID = newApp.ClientID
+	app.ClientSecret = newApp.ClientSecret
+
 	return
 }
 
