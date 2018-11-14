@@ -43,23 +43,24 @@ func textContent(s string) string {
 	}
 	extractText(doc, &buf)
 
-	safestring := buf.String()
-	if safestring != "" {
-		// シャープはJuman++の特殊記号らしいので全角に変換
-		safestring = strings.Replace(safestring, `#`, "＃", -1)
-		// 改行のない長文はJumanppに食わせるとエラーになるので、句点で強制改行
-		safestring = strings.Replace(safestring, "。\n", "。", -1)
-		safestring = strings.Replace(safestring, "。", "。\n", -1)
-	}
-
-	return safestring
+	return buf.String()
 }
 
 // parseは、Juman++で文字列を形態素解析して結果を返す。
 func parse(text string) (result parseResult, err error) {
+	if text == "" {
+		err = errors.New("解析する文字列が空です。")
+		log.Printf("info: %s", err)
+		return
+	}
+
+	// 改行のない長文はJumanppに食わせるとエラーになるので、句点で強制改行
+	safeStr := strings.Replace(text, "。\n", "。", -1)
+	safeStr = strings.Replace(safeStr, "。", "。\n", -1)
+
 	// Juman++で形態素解析
-	cmd := exec.Command("jumanpp", "-F")
-	cmd.Stdin = strings.NewReader(text)
+	cmd := exec.Command("jumanpp")
+	cmd.Stdin = strings.NewReader(safeStr)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	if err = cmd.Run(); err != nil {
@@ -67,16 +68,16 @@ func parse(text string) (result parseResult, err error) {
 		return
 	}
 
-	// 解析結果をスライスに整理（スペースとアンダースコアは除外）
-	nodeStrs := strings.Fields(out.String())
+	// 解析結果をスライスに整理（半角スペースは除外）
+	nodeStrs := strings.Split(out.String(), "\n")
 	nodes := make([][]string, 0)
 	strange := false
 	for _, s := range nodeStrs {
-		if strings.HasPrefix(s, "_") {
+		if s == "" || strings.HasPrefix(s, " ") || strings.HasPrefix(s, "EOS") || strings.HasPrefix(s, "@"){
 			continue
 		}
-		node := strings.Split(s, "_")
-		if len(node) < 7 {
+		node := strings.SplitN(s, " ", 12)
+		if len(node) < 12 {
 			strange = true
 			log.Println("info: 異常なjumanpp解析結果：", node)
 			if node[0] == "#" {
@@ -91,7 +92,7 @@ func parse(text string) (result parseResult, err error) {
 	result = parseResult{nodes}
 
 	if strange {
-		log.Printf("info: 解析異常が出たテキスト：%s", text)
+		log.Printf("info: 解析異常が出たテキスト：%s", safeStr)
 	}
 
 	return

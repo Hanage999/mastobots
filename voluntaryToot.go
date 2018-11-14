@@ -101,11 +101,11 @@ func (bot *Persona) messageFromItem(item Item) (msg string, err error) {
 	// トゥートに使う単語の選定
 	candidates := make([]candidate, 0)
 	for _, node := range result.Nodes {
-		if node[4] != "普通名詞" && node[4] != "組織名" && node[4] != "人名" && node[4] != "地名" {
+		if node[5] != "普通名詞" && node[5] != "組織名" && node[5] != "人名" && node[5] != "地名" {
 			continue
 		}
 		cd := candidate{node[0], string(getRuneAt(node[1], 0)), 700 + rand.Intn(2000)}
-		if node[4] == "普通名詞" {
+		if node[5] == "普通名詞" {
 			cd.priority = rand.Intn(2000)
 		}
 		candidates = append(candidates, cd)
