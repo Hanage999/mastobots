@@ -153,6 +153,7 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 		for _, w := range bot.Keywords {
 			if result.contain(w) {
 				myItems = append(myItems, item)
+				log.Printf("info: item_id: %d、 サマリー：%s", item.ID, sumStr)
 				break
 			}
 		}

@@ -68,12 +68,12 @@ func parse(text string) (result parseResult, err error) {
 		return
 	}
 
-	// 解析結果をスライスに整理（半角スペースは除外）
+	// 解析結果をスライスに整理（半角スペース等は除外）
 	nodeStrs := strings.Split(out.String(), "\n")
 	nodes := make([][]string, 0)
 	strange := false
 	for _, s := range nodeStrs {
-		if s == "" || strings.HasPrefix(s, " ") || strings.HasPrefix(s, "EOS") || strings.HasPrefix(s, "@"){
+		if strings.HasPrefix(s, " ") || strings.HasPrefix(s, "@") || strings.HasPrefix(s, "EOS") || s == "" {
 			continue
 		}
 		node := strings.SplitN(s, " ", 12)
@@ -103,6 +103,7 @@ func (result parseResult) contain(str string) bool {
 	for _, node := range result.Nodes {
 		// 3番目の要素が基本形
 		if node[2] == str {
+			log.Printf("info: 一致した単語：%s", str)
 			return true
 		}
 	}
