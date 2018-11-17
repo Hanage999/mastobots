@@ -158,6 +158,21 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 			yon = "いい" + bot.Assertion + "よ"
 		}
 		msg = "@" + account.Acct + " " + bot.Starter + name + bot.Title + "。" + yon
+	case strings.Contains(txt, "天気"):
+		lc, dt, err := judgeWeatherRequest(txt)
+		if err != nil {
+			return err
+		}
+		loc, forecast, err := GetRandomWeather(dt)
+		if err != nil {
+			log.Printf("info: %s が天気の取得に失敗しました。")
+			return err
+		}
+		ignoreStr := ""
+		if lc != "" && lc != loc {
+			ignoreStr = lc + "はともかく、"
+		}
+		msg = "@" + account.Acct + " " + ignoreStr + forecast.DateLabel + "の" + loc + "は " + forecast.Telop + "、最高" + forecast.Temperature.Max.Celsius + "度・最低" + forecast.Temperature.Min.Celsius + "度みたい" + bot.Assertion + "ね"
 	}
 
 	if msg != "" {
