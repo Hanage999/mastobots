@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strings"
 	"regexp"
+	"golang.org/x/net/html"
 )
 
 // Forcastは、livedoor天気予報のAPIが返してくるjsonデータを保持する。
@@ -33,11 +34,58 @@ type Forecast struct {
 	}
 }
 
+// getLocationCodesは、livedoor天気予報の地域コードを取得する
+func getLocationCodes() (results map[string]interface{}, err error) {
+	url := "http://weather.livedoor.com/forecast/rss/primary_area.xml"
+
+	results = make(map[string]interface{})
+
+	res, err := http.Get(url)
+	if err != nil {
+		log.Printf("%s へのリクエストに失敗しました。：%s\n", url, err)
+		return
+	}
+	defer res.Body.Close()
+
+	if code := res.StatusCode; code >= 400 {
+		err = fmt.Errorf("%s への接続エラーです(%d)。", url, code)
+		log.Printf("info: %s\n", err)
+		return
+	}
+
+	doc, err := html.Parse(res.Body)
+	if err != nil {
+		log.Printf("%s のパースに失敗しました。：%s", url, err)
+		return
+	}
+
+	var f func(*html.Node)
+	f = func(n *html.Node) {
+		if n.Type == html.ElementNode && n.Data == "city" {
+			var ttl, code string
+			for _, a := range n.Attr {
+				if a.Key == "title" {
+					ttl = a.Val
+				}
+				if a.Key == "id" {
+					code = a.Val
+				}
+			}
+			results[ttl] = code
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			f(c)
+		}
+	}
+	f(doc)
+	return
+}
+
 // getRandomWeatherは、livedoor天気予報でランダムな地域の天気を取得する。
 // when: 0は今日、1は明日、2は明後日
 func GetRandomWeather(when int) (loc string, forecast Forecast, err error) {
 	var code interface{}
-	loc, code, err = RandomMap(Cities)
+	loc, code, err = RandomMap(locationCodes)
 	if err != nil {
 		log.Printf("info: %s\n", err)
 		return
@@ -97,6 +145,35 @@ func emojifyWeather (telop string) (emojiStr string, err error) {
 	emojiStr = strings.Replace(emojiStr, "雪", "⛄️", -1)
 	emojiStr = strings.Replace(emojiStr, "時々", "／", -1)
 	emojiStr = strings.Replace(emojiStr, "のち", "→", -1)
+
+	return
+}
+
+// forecastMessageは、天気予報を告げるメッセージを返す。
+func forecastMessage(loc string, forecast Forecast, assertion string) (msg string) {
+	maxT := ""
+	if t := forecast.Temperature.Max.Celsius; t != "" {
+			maxT = "最高 " + t + "℃"
+	}
+
+	minT := ""
+	if t := forecast.Temperature.Min.Celsius; t != "" {
+			minT = "最低 " + t + "℃"
+	}
+
+	cm := " "
+	spc := ""
+	if maxT != "" || minT != "" {
+		cm = "、"
+		spc = " "
+	}
+
+	sep := ""
+	if maxT != "" && minT != "" {
+		sep = "・"
+	}
+
+	msg = forecast.DateLabel + "の" + loc + "は " + forecast.Telop + cm + maxT + sep + minT + spc + "みたい" + assertion + "ね"
 
 	return
 }
@@ -167,6 +244,3 @@ func (result parseResult) getWeatherQueryDate() (date int){
 
 	return
 }
-
-// Citiesは、livedoor天気で使われている地域コードを保持する
-var Cities map[string]interface{} = map[string]interface{}{"高山": "210020", "相川": "150040", "大津": "250010", "中津": "440020", "室蘭": "015010", "宮古": "030020", "石垣島": "474010", "網走": "013010", "米沢": "060020", "松江": "320010", "新居浜": "380020", "清水": "390030", "旭川": "012010", "高田": "150030", "萩": "350040", "横手": "050020", "阿蘇乙姫": "430020", "和歌山": "300010", "伊万里": "410020", "秋田": "050010", "新庄": "060040", "東京": "130010", "松本": "200020", "岐阜": "210010", "大阪": "270000", "潮岬": "300020", "米子": "310020", "倶知安": "016030", "むつ": "020020", "新潟": "150010", "広島": "340010", "飯塚": "400030", "福江": "420040", "厳原": "420030", "人吉": "430040", "鹿屋": "460020", "前橋": "100010", "伏木": "160020", "佐賀": "410010", "高松": "370000", "白石": "040020", "津": "240010", "京都": "260010", "福島": "070010", "徳島": "360010", "佐世保": "420020", "日田": "440030", "福井": "180010", "庄原": "340020", "山口": "350020", "岩見沢": "016020", "飯田": "200030", "静岡": "220010", "名古屋": "230010", "柳井": "350030", "稚内": "011000", "北見": "013020", "浦河": "015020", "高知": "390010", "釧路": "014020", "小田原": "140020", "熊本": "430010", "浜田": "320020", "岡山": "330010", "館山": "120030", "長野": "200010", "彦根": "250020", "福岡": "400010", "久米島": "471030", "銚子": "120020", "尾鷲": "240020", "宇和島": "380030", "奈良": "290010", "鳥取": "310010", "那覇": "471010", "宮古島": "473000", "みなかみ": "100020", "秩父": "110030", "八丈島": "130030", "豊橋": "230020", "舞鶴": "260020", "松山": "380010", "宇都宮": "090010", "大島": "130020", "敦賀": "180020", "土浦": "080020", "甲府": "190010", "さいたま": "110010", "宮崎": "450010", "豊岡": "280020", "江差": "017020", "酒田": "060030", "熊谷": "110020", "三島": "220030", "西郷": "320030", "牛深": "430030", "延岡": "450020", "鹿児島": "460010", "紋別": "013030", "小名浜": "070020", "若松": "070030", "名瀬": "460040", "南大東": "472000", "札幌": "016010", "大船渡": "030030", "長岡": "150020", "高千穂": "450040", "留萌": "012020", "富山": "160010", "大分": "440010", "金沢": "170010", "日和佐": "360020", "水戸": "080010", "千葉": "120010", "父島": "130040", "室戸岬": "390020", "与那国島": "474020", "八戸": "020030", "津山": "330020", "下関": "350010", "風屋": "290020", "佐伯": "440040", "大田原": "090020", "輪島": "170020", "神戸": "280010", "根室": "014010", "盛岡": "030010", "種子島": "460030", "仙台": "040010", "横浜": "140010", "浜松": "220040", "帯広": "014030", "函館": "017010", "青森": "020010", "名護": "471020", "山形": "060010", "八幡": "400020", "久留米": "400040", "都城": "450030", "河口湖": "190020", "網代": "220020", "長崎": "420010"}

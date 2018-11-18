@@ -172,7 +172,7 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 		if lc != "" && lc != loc {
 			ignoreStr = lc + "はともかく、"
 		}
-		msg = "@" + account.Acct + " " + ignoreStr + forecast.DateLabel + "の" + loc + "は " + forecast.Telop + "、最高" + forecast.Temperature.Max.Celsius + "度・最低" + forecast.Temperature.Min.Celsius + "度みたい" + bot.Assertion + "ね"
+		msg = "@" + account.Acct + " " + ignoreStr + forecastMessage(loc, forecast, bot.Assertion)
 	}
 
 	if msg != "" {

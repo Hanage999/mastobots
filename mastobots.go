@@ -16,6 +16,7 @@ var (
 	revision      string = "0"
 	maxRetry      int    = 5
 	retryInterval        = time.Duration(5) * time.Second
+	locationCodes map[string]interface{}
 )
 
 // Initializeは、config.ymlに従ってbotとデータベース接続を初期化する。
@@ -45,6 +46,12 @@ func Initialize() (bots []*Persona, db *DB, err error) {
 			log.Printf("alert: %s がインストールされていません！", cmd)
 			return nil, nil, err
 		}
+	}
+
+	// 天気予報の地域コード読み込み
+	locationCodes, err = getLocationCodes()
+	if err != nil {
+		return
 	}
 
 	var appName string

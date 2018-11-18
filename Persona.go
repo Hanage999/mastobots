@@ -108,7 +108,7 @@ func (bot *Persona) life(ctx context.Context, db *DB) {
 					if err != nil {
 						log.Printf("info: %s が天気予報を取ってこれませんでした。", bot.Name)
 					} else {
-						weatherStr = "。" + forecast.DateLabel + "の" + loc + "は " + forecast.Telop + "、最高" + forecast.Temperature.Max.Celsius + "度・最低" + forecast.Temperature.Min.Celsius + "度みたい" + bot.Assertion + "ね"
+						weatherStr = "。" + forecastMessage(loc, forecast, bot.Assertion)
 					}
 					toot := mastodon.Toot{Status: "おはようございます" + bot.Assertion + weatherStr}
 					if err := bot.post(newCtx, toot); err != nil {
