@@ -165,16 +165,16 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 		if err != nil {
 			return err
 		}
-		loc, forecast, err := GetRandomWeather(dt)
+		data, err := GetRandomWeather(dt)
 		if err != nil {
 			log.Printf("info: %s が天気の取得に失敗しました。")
 			return err
 		}
 		ignoreStr := ""
-		if lc != "" && lc != loc {
+		if lc != "" && lc != data.Location.City {
 			ignoreStr = lc + "はともかく、"
 		}
-		msg = "@" + account.Acct + " " + ignoreStr + forecastMessage(loc, forecast, bot.Assertion)
+		msg = "@" + account.Acct + " " + ignoreStr + forecastMessage(data, bot.Assertion)
 	}
 
 	if msg != "" {

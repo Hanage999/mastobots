@@ -11,6 +11,12 @@ import (
 	"strings"
 )
 
+// WeatherDataは、livedoor天気予報のAPIが返してくるjsonデータを保持する
+type WeatherData struct {
+	Forecasts []Forecast
+	Location  Location
+}
+
 // Forcastは、livedoor天気予報のAPIが返してくるjsonデータを保持する。
 type Forecast struct {
 	DateLabel   string `json: "dateLabel"`
@@ -32,6 +38,13 @@ type Forecast struct {
 		Title  string `json: "title"`
 		Height int    `json: "height"`
 	}
+}
+
+// Locationは、livedoor天気予報のAPIが返してくるjsonデータを保持する
+type Location struct {
+	City       string `json: "city"`
+	Area       string `json: "area"`
+	Prefecture string `json: "prefecture"`
 }
 
 // getLocationCodesは、livedoor天気予報の地域コードを取得する
@@ -83,9 +96,8 @@ func getLocationCodes() (results map[string]interface{}, err error) {
 
 // getRandomWeatherは、livedoor天気予報でランダムな地域の天気を取得する。
 // when: 0は今日、1は明日、2は明後日
-func GetRandomWeather(when int) (loc string, forecast Forecast, err error) {
-	var code interface{}
-	loc, code, err = RandomMap(locationCodes)
+func GetRandomWeather(when int) (data WeatherData, err error) {
+	_, code, err := RandomMap(locationCodes)
 	if err != nil {
 		log.Printf("info: %s\n", err)
 		return
@@ -107,21 +119,20 @@ func GetRandomWeather(when int) (loc string, forecast Forecast, err error) {
 	}
 	defer res.Body.Close()
 
-	var result struct {
-		Forecasts []Forecast
-	}
+	var response WeatherData
 
-	if err = json.NewDecoder(res.Body).Decode(&result); err != nil {
+	if err = json.NewDecoder(res.Body).Decode(&response); err != nil {
 		log.Printf("info: 予報データがデコードできませんでした。：%s", err)
 		return
 	}
 
-	result.Forecasts[when].Telop, err = emojifyWeather(result.Forecasts[when].Telop)
+	response.Forecasts[when].Telop, err = emojifyWeather(response.Forecasts[when].Telop)
 	if err != nil {
 		return
 	}
 
-	forecast = result.Forecasts[when]
+	data.Forecasts = []Forecast{response.Forecasts[when]}
+	data.Location = response.Location
 
 	return
 }
@@ -150,14 +161,14 @@ func emojifyWeather(telop string) (emojiStr string, err error) {
 }
 
 // forecastMessageは、天気予報を告げるメッセージを返す。
-func forecastMessage(loc string, forecast Forecast, assertion string) (msg string) {
+func forecastMessage(data WeatherData, assertion string) (msg string) {
 	maxT := ""
-	if t := forecast.Temperature.Max.Celsius; t != "" {
+	if t := data.Forecasts[0].Temperature.Max.Celsius; t != "" {
 		maxT = "最高 " + t + "℃"
 	}
 
 	minT := ""
-	if t := forecast.Temperature.Min.Celsius; t != "" {
+	if t := data.Forecasts[0].Temperature.Min.Celsius; t != "" {
 		minT = "最低 " + t + "℃"
 	}
 
@@ -173,7 +184,7 @@ func forecastMessage(loc string, forecast Forecast, assertion string) (msg strin
 		sep = "・"
 	}
 
-	msg = forecast.DateLabel + "の" + loc + "は " + forecast.Telop + cm + maxT + sep + minT + spc + "みたい" + assertion + "ね"
+	msg = data.Forecasts[0].DateLabel + "の" + data.Location.City + "は " + data.Forecasts[0].Telop + cm + maxT + sep + minT + spc + "みたい" + assertion + "ね"
 
 	return
 }

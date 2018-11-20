@@ -104,11 +104,11 @@ func (bot *Persona) life(ctx context.Context, db *DB) {
 				bot.activities(newCtx, db)
 				go func() {
 					weatherStr := ""
-					loc, forecast, err := GetRandomWeather(0)
+					data, err := GetRandomWeather(0)
 					if err != nil {
 						log.Printf("info: %s が天気予報を取ってこれませんでした。", bot.Name)
 					} else {
-						weatherStr = "。" + forecastMessage(loc, forecast, bot.Assertion)
+						weatherStr = "。" + forecastMessage(data, bot.Assertion)
 					}
 					toot := mastodon.Toot{Status: "おはようございます" + bot.Assertion + weatherStr}
 					if err := bot.post(newCtx, toot); err != nil {
