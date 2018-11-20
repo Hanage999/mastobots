@@ -26,13 +26,13 @@ LOOP:
 		case ev := <-evch:
 			switch t := ev.(type) {
 			case *mastodon.UpdateEvent:
-				go func () {
+				go func() {
 					if err := bot.respondToUpdate(newCtx, t); err != nil {
 						log.Printf("info: %s がトゥートに反応できませんでした。\n", bot.Name)
 					}
 				}()
 			case *mastodon.NotificationEvent:
-				go func () {
+				go func() {
 					if err := bot.respondToNotification(newCtx, t); err != nil {
 						log.Printf("info: %s が通知に反応できませんでした。\n", bot.Name)
 					}
@@ -64,8 +64,10 @@ func (bot *Persona) openStreaming(ctx context.Context) (evch chan mastodon.Event
 			continue
 		}
 		log.Printf("trace: %s のストリーミング受信に成功しました。\n", bot.Name)
-		break
+		return
 	}
+
+	log.Printf("info: %s のストリーミング受信開始に失敗しました。：%s\n", bot.Name, err)
 
 	return
 }

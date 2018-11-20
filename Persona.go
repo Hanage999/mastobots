@@ -102,7 +102,7 @@ func (bot *Persona) life(ctx context.Context, db *DB) {
 			case <-wakeTick:
 				newCtx, cancel = context.WithCancel(ctx)
 				bot.activities(newCtx, db)
-				go func () {
+				go func() {
 					weatherStr := ""
 					loc, forecast, err := GetRandomWeather(0)
 					if err != nil {

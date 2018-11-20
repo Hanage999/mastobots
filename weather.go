@@ -1,36 +1,36 @@
 package mastobots
 
 import (
-	"log"
-	"net/http"
 	"encoding/json"
-	"math/rand"
 	"fmt"
-	"strings"
-	"regexp"
 	"golang.org/x/net/html"
+	"log"
+	"math/rand"
+	"net/http"
+	"regexp"
+	"strings"
 )
 
 // Forcastは、livedoor天気予報のAPIが返してくるjsonデータを保持する。
 type Forecast struct {
-	DateLabel	string	`json: "dateLabel"`
-	Telop		string	`json: "telop"`
-	Date		string	`json: "date"`
-	Temperature	struct {
+	DateLabel   string `json: "dateLabel"`
+	Telop       string `json: "telop"`
+	Date        string `json: "date"`
+	Temperature struct {
 		Min struct {
-			Celsius	string	`json: "celsius"`
+			Celsius    string `json: "celsius"`
 			Fahrenheit string `json: "fahrenheit"`
 		}
 		Max struct {
-			Celsius string	`json: "celsius"`
+			Celsius    string `json: "celsius"`
 			Fahrenheit string `json: "fahrenheit"`
 		}
 	}
-	Image	struct {
-		Width	int	`json: "width"`
-		URL	string	`json: "url"`
-		Title	string	`json: "title"`
-		Height	int	`json: "height"`
+	Image struct {
+		Width  int    `json: "width"`
+		URL    string `json: "url"`
+		Title  string `json: "title"`
+		Height int    `json: "height"`
 	}
 }
 
@@ -108,7 +108,7 @@ func GetRandomWeather(when int) (loc string, forecast Forecast, err error) {
 	defer res.Body.Close()
 
 	var result struct {
-		Forecasts	[]Forecast
+		Forecasts []Forecast
 	}
 
 	if err = json.NewDecoder(res.Body).Decode(&result); err != nil {
@@ -127,7 +127,7 @@ func GetRandomWeather(when int) (loc string, forecast Forecast, err error) {
 }
 
 // EmojifyWeatherは、天気を絵文字で表現する。
-func emojifyWeather (telop string) (emojiStr string, err error) {
+func emojifyWeather(telop string) (emojiStr string, err error) {
 	if telop == "" {
 		err = fmt.Errorf("info: 天気テキストが空です。")
 		return
@@ -153,12 +153,12 @@ func emojifyWeather (telop string) (emojiStr string, err error) {
 func forecastMessage(loc string, forecast Forecast, assertion string) (msg string) {
 	maxT := ""
 	if t := forecast.Temperature.Max.Celsius; t != "" {
-			maxT = "最高 " + t + "℃"
+		maxT = "最高 " + t + "℃"
 	}
 
 	minT := ""
 	if t := forecast.Temperature.Min.Celsius; t != "" {
-			minT = "最低 " + t + "℃"
+		minT = "最低 " + t + "℃"
 	}
 
 	cm := " "
@@ -204,7 +204,7 @@ func RandomMap(m map[string]interface{}) (loc string, code interface{}, err erro
 }
 
 // judgeWeatherRequestは、天気の要望の内容を判断する
-func judgeWeatherRequest(txt string) (lc string, dt int, err error){
+func judgeWeatherRequest(txt string) (lc string, dt int, err error) {
 	result, err := parse(txt)
 	if err != nil {
 		return
@@ -219,8 +219,8 @@ func judgeWeatherRequest(txt string) (lc string, dt int, err error){
 // getWeatherQueryLocationは、天気情報の要望トゥートの形態素解析結果に地名が存在すればそれを返す。
 func (result parseResult) getWeatherQueryLocation() (loc string) {
 	for _, node := range result.Nodes {
-		// 5番目の要素が品詞詳細
-		if node[5] == "地名" || node[5] == "人名" {
+		// 5番目の要素は品詞詳細、11番目の要素は諸情報
+		if node[5] == "地名" || node[5] == "人名" || strings.Contains(node[11], "地名") || strings.Contains(node[11], "場所") {
 			loc = node[0]
 			return
 		}
@@ -230,7 +230,7 @@ func (result parseResult) getWeatherQueryLocation() (loc string) {
 }
 
 // getWeatherQueryDateは、天気情報の要望トゥートの形態素解析結果に日の指定があればそれを返す。
-func (result parseResult) getWeatherQueryDate() (date int){
+func (result parseResult) getWeatherQueryDate() (date int) {
 	for _, node := range result.Nodes {
 		switch node[1] {
 		case "あす", "あした", "みょうにち":
