@@ -189,6 +189,9 @@ func (bot *Persona) activities(ctx context.Context, db DB) {
 	if len(bot.RandomToots) > 0 && bot.RandomFrequency > 0 {
 		go bot.randomToot(ctx)
 	}
+	if bot.DBID == 2 {
+		go bot.monitorFederation(ctx)
+	}
 }
 
 // postはトゥートを投稿する。失敗したらmaxRetryを上限に再試行する。

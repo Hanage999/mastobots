@@ -56,6 +56,12 @@ func Initialize() (bots []*Persona, db DB, err error) {
 		return
 	}
 
+	// 画像認識モデルの読み込み
+	model, labels, err = loadModel()
+	if err != nil {
+		return
+	}
+
 	var appName string
 	var apps []*MastoApp
 	var cr map[string]string

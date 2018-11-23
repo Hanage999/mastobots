@@ -5,3 +5,5 @@ cmd/test
 cmd/mastobots/mastobots
 *.backup
 .DS_Store
+cmd/**/*.json
+cmd/**/*.txt

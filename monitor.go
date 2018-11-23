@@ -13,7 +13,7 @@ import (
 	mastodon "github.com/hanage999/go-mastodon"
 )
 
-// moitorは、websocketでタイムラインを監視して反応する。
+// moitorは、websocketでホームタイムラインを監視して反応する。
 func (bot *Persona) monitor(ctx context.Context) {
 	log.Printf("info: Goroutines: %d", runtime.NumGoroutine())
 	log.Printf("info: %s がタイムライン監視を開始しました", bot.Name)
@@ -56,6 +56,44 @@ func (bot *Persona) monitor(ctx context.Context) {
 	}
 }
 
+// moitorFederationは、websocketで連合タイムラインを監視して反応する。
+func (bot *Persona) monitorFederation(ctx context.Context) {
+	log.Printf("trace: %s が連合タイムライン監視を開始しました。", bot.Name)
+	newCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	evch, err := bot.openFederatedStreaming(newCtx)
+	if err != nil {
+		log.Printf("info: %s が連合ストリーミングを受信開始できませんでした。\n", bot.Name)
+		return
+	}
+
+LOOP:
+	for {
+		select {
+		case ev := <-evch:
+			switch t := ev.(type) {
+			case *mastodon.UpdateEvent:
+				go func() {
+					if err := bot.respondToImages(newCtx, t); err != nil {
+						log.Printf("info: %s がトゥートに反応できませんでした。\n", bot.Name)
+					}
+				}()
+			case *mastodon.ErrorEvent:
+				cancel()
+				itv := rand.Intn(5000) + 1
+				log.Printf("info: %s の接続が切れました。%dミリ秒後に再接続します：%s\n", bot.Name, itv, t.Error())
+				time.Sleep(time.Duration(itv) * time.Millisecond)
+				go bot.monitor(ctx)
+				break LOOP
+			}
+		case <-ctx.Done():
+			log.Printf("trace: %s が今日のタイムライン監視を終了しました", bot.Name)
+			break LOOP
+		}
+	}
+
+}
+
 // openStreamingは、HTLのストリーミング接続を開始する。失敗したらmaxRetryを上限に再試行する。
 func (bot *Persona) openStreaming(ctx context.Context) (evch chan mastodon.Event, err error) {
 	wsc := bot.Client.NewWSClient()
@@ -70,6 +108,25 @@ func (bot *Persona) openStreaming(ctx context.Context) (evch chan mastodon.Event
 		return
 	}
 	log.Printf("info: %s のストリーミング受信開始に失敗しました：%s", bot.Name, err)
+	return
+}
+
+// openStreamingは、HTLのストリーミング接続を開始する。失敗したらmaxRetryを上限に再試行する。
+func (bot *Persona) openFederatedStreaming(ctx context.Context) (evch chan mastodon.Event, err error) {
+	wsc := bot.Client.NewWSClient()
+	for i := 0; i < maxRetry; i++ {
+		evch, err = wsc.StreamingWSPublic(ctx, false)
+		if err != nil {
+			time.Sleep(retryInterval)
+			log.Printf("info: %s の連合ストリーミング受信開始をリトライします：%s\n", bot.Name, err)
+			continue
+		}
+		log.Printf("trace: %s の連合ストリーミング受信に成功しました。\n", bot.Name)
+		return
+	}
+
+	log.Printf("info: %s の連合ストリーミング受信開始に失敗しました。：%s\n", bot.Name, err)
+
 	return
 }
 
@@ -163,6 +220,32 @@ func (bot *Persona) messageFromParseResult(result parseResult, url string) (msg 
 	return
 }
 
+// respondToImagesは、画像が含まれているstatusに反応する。
+func (bot *Persona) respondToImages(ctx context.Context, ev *mastodon.UpdateEvent) (err error) {
+	// メンションは無視
+	if len(ev.Status.Mentions) != 0 {
+		return
+	}
+
+	// 自分のトゥートは無視
+	if ev.Status.Account.ID == bot.MyID {
+		return
+	}
+
+	// 画像を含んでたらチェック
+	_ = detectImage(ev.Status)
+	/*	if oshiri {
+			msg := "おしり発見！\n" + ev.Status.URI
+			toot := mastodon.Toot{Status: msg, Visibility: "direct"}
+			if err = bot.post(ctx, toot); err != nil {
+				log.Printf("info: %s がトゥートに失敗しました。\n", bot.Name)
+				return
+			}
+		}
+	*/
+	return
+}
+
 // respondToNotificationは、通知に反応する。
 func (bot *Persona) respondToNotification(ctx context.Context, ev *mastodon.NotificationEvent) (err error) {
 	switch ev.Notification.Type {
@@ -202,6 +285,20 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 	}
 
 	msg := ""
+
+	/*	if bot.DBID == 2 {
+			// 画像を含んでたらチェック
+			oshiri := detectImage(status)
+			if oshiri {
+				msg := "おしり発見！\n" + status.URI
+				toot := mastodon.Toot{Status: msg, Visibility: "direct"}
+				if err = bot.post(ctx, toot); err != nil {
+					log.Printf("info: %s がトゥートに失敗しました。\n", bot.Name)
+					return
+				}
+			}
+		}
+	*/
 
 	switch {
 	case strings.Contains(txt, "フォロー"):
