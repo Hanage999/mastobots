@@ -153,7 +153,7 @@ func emojifyWeather(telop string) (emojiStr string, err error) {
 	rep = regexp.MustCompile(`雪で暴風を伴う|暴風雪`)
 	emojiStr = rep.ReplaceAllString(emojiStr, "🌀☃️")
 	emojiStr = strings.Replace(emojiStr, "雨", "☂️", -1)
-	emojiStr = strings.Replace(emojiStr, "雪", "⛄️", -1)
+	emojiStr = strings.Replace(emojiStr, "雪", "⛄", -1)
 	emojiStr = strings.Replace(emojiStr, "時々", "／", -1)
 	emojiStr = strings.Replace(emojiStr, "のち", "→", -1)
 
