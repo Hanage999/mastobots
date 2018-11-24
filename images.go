@@ -130,10 +130,16 @@ func detectImage(status *mastodon.Status) (itis bool) {
 			break
 		}
 		result := model.Update(input)
-		log.Printf("info: %s 判定：%f", atc.PreviewURL, result[0])
-		if result[0] > 0.9 {
-			itis = true
-			break
+		log.Printf("info: %s", atc.PreviewURL)
+		for i := 0; i < len(result) - 1; i++ {
+			log.Printf("info: %s度：%f", labels[i], result[i])
+			if result[i] > 0.8 {
+				itis = true
+			}
+		}
+		log.Printf("info: %s度：%f", labels[len(result) - 1], result[len(result) - 1])
+		if result[len(result) - 1] > 0.5 {
+			itis = false
 		}
 	}
 

@@ -232,7 +232,7 @@ func (bot *Persona) respondToImages(ctx context.Context, ev *mastodon.UpdateEven
 		return
 	}
 
-	// 画像を含んでたらチェック
+	// お気に入り画像を含んでたらブースト
 	_ = detectImage(ev.Status)
 	/*	if oshiri {
 			msg := "おしり発見！\n" + ev.Status.URI
