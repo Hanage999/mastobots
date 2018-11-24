@@ -1,4 +1,6 @@
 cmd/**/*.yml
+cmd/**/*.txt
+cmd/**/*.json
 cmd/test
 cmd/mastobots/mastobots
 *.backup
