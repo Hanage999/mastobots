@@ -184,7 +184,7 @@ func forecastMessage(data WeatherData, assertion string) (msg string) {
 		sep = "・"
 	}
 
-	msg = data.Forecasts[0].DateLabel + "の" + data.Location.City + "は " + data.Forecasts[0].Telop + cm + maxT + sep + minT + spc + "みたい" + assertion + "ね"
+	msg = data.Forecasts[0].DateLabel + "の" + data.Location.Prefecture + data.Location.City + "は " + data.Forecasts[0].Telop + cm + maxT + sep + minT + spc + "みたい" + assertion + "ね"
 
 	return
 }
