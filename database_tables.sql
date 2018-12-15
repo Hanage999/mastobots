@@ -22,12 +22,12 @@ CREATE TABLE `items` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `title` varchar(250) NOT NULL DEFAULT '',
   `url` varchar(191) NOT NULL,
-  `summary` varchar(2000) DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
+  `content` text NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `url` (`url`)
-) ENGINE=InnoDB AUTO_INCREMENT=177652 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=264293 DEFAULT CHARSET=utf8;
 
 CREATE TABLE `rss_feeds` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,

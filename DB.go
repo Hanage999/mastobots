@@ -19,7 +19,7 @@ type Item struct {
 	ID      int
 	Title   string
 	URL     string
-	Summary string
+	Content string
 }
 
 // newDBは、新たなデータベース接続を作成する。
@@ -99,7 +99,7 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 	// itemsテーブルから新規itemを取得
 	rows, err := db.Query(`
 		SELECT
-			id, title, url, summary
+			id, title, url, content
 		FROM
 			items
 		WHERE
@@ -118,12 +118,12 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 	items := make([]Item, 0)
 	for rows.Next() {
 		var id int
-		var title, url, summary string
-		if err := rows.Scan(&id, &title, &url, &summary); err != nil {
+		var title, url, content string
+		if err := rows.Scan(&id, &title, &url, &content); err != nil {
 			log.Printf("info: itemsテーブルから一行の情報取得に失敗しました。：%s\n", err)
 			continue
 		}
-		items = append(items, Item{id, title, url, summary})
+		items = append(items, Item{id, title, url, content})
 	}
 	err = rows.Err()
 	if err != nil {
@@ -135,12 +135,12 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 	// 結果から、興味のある物件を収集
 	myItems := make([]Item, 0)
 	for _, item := range items {
-		sumStr := item.Title
-		if item.Summary != item.Title {
-			sumStr = item.Title + "。\n" + textContent(item.Summary)
+		contentStr := item.Content
+		if !strings.HasPrefix(contentStr, item.Title) {
+			contentStr = item.Title + "。\n" + contentStr
 		}
 
-		result, err := parse(sumStr)
+		result, err := parse(contentStr)
 		if err != nil {
 			log.Printf("info: id: %d のサマリーのパースに失敗しました。\n", item.ID)
 			continue
@@ -153,7 +153,7 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 		for _, w := range bot.Keywords {
 			if result.contain(w) {
 				myItems = append(myItems, item)
-				log.Printf("info: item_id: %d、 サマリー：%s", item.ID, sumStr)
+				log.Printf("info: 収集されたitem_id: %d、 content：%s", item.ID, contentStr)
 				break
 			}
 		}
@@ -205,7 +205,7 @@ func (db *DB) pickItem(bot *Persona) (item Item, err error) {
 	// candidates, itemsテーブルから新規itemを取得
 	rows, err := db.Query(`
 		SELECT
-			candidates.item_id, items.title, items.url, items.summary
+			candidates.item_id, items.title, items.url, items.content
 		FROM
 			candidates
 		INNER JOIN
@@ -226,12 +226,12 @@ func (db *DB) pickItem(bot *Persona) (item Item, err error) {
 	items := make([]Item, 0)
 	for rows.Next() {
 		var id int
-		var title, url, summary string
-		if err := rows.Scan(&id, &title, &url, &summary); err != nil {
+		var title, url, content string
+		if err := rows.Scan(&id, &title, &url, &content); err != nil {
 			log.Printf("info: itemsテーブルから一行の情報取得に失敗しました。%s\n", err)
 			continue
 		}
-		items = append(items, Item{id, title, url, summary})
+		items = append(items, Item{id, title, url, content})
 	}
 	err = rows.Err()
 	if err != nil {

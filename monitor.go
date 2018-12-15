@@ -38,15 +38,17 @@ LOOP:
 					}
 				}()
 			case *mastodon.ErrorEvent:
+				time.Sleep(time.Duration(rand.Intn(5000) + 1000) * time.Millisecond)
+				if ctx.Err() != nil {
+					break LOOP
+				}
+				log.Printf("info: %s の接続が切れました。再接続します：%s\n", bot.Name, t.Error())
 				cancel()
-				itv := rand.Intn(5000) + 1
-				log.Printf("info: %s の接続が切れました。%dミリ秒後に再接続します：%s\n", bot.Name, itv, t.Error())
-				time.Sleep(time.Duration(itv) * time.Millisecond)
 				go bot.monitor(ctx)
 				break LOOP
 			}
 		case <-ctx.Done():
-			log.Printf("trace: %s が今日のタイムライン監視を終了しました", bot.Name)
+			log.Printf("info: %s が今日のタイムライン監視を終了しました", bot.Name)
 			break LOOP
 		}
 	}

@@ -36,7 +36,7 @@ LOOP:
 				}
 			}()
 		case <-ctx.Done():
-			log.Printf("trace: %s が今日の定期トゥートを終了しました", bot.Name)
+			log.Printf("info: %s が今日の定期トゥートを終了しました", bot.Name)
 			break LOOP
 		}
 	}
@@ -77,10 +77,10 @@ func (bot *Persona) createNewsToot(db *DB) (toot mastodon.Toot, item Item, err e
 // messageFromItemは、itemの内容から投稿文を作成する。
 func (bot *Persona) messageFromItem(item Item) (msg string, err error) {
 	txt := item.Title
-	if item.Summary != txt {
-		txt = txt + "。" + textContent(item.Summary)
+	if !strings.HasPrefix(item.Content,txt) {
+		txt = txt + "。" + item.Content
 	}
-	log.Printf("trace: 素のsummary：%s\n", txt)
+	log.Printf("trace: 素のcontent：%s\n", txt)
 
 	// 2ちゃんねるヘッダー除去
 	rep := regexp.MustCompile(`\d+[:：]?.*\d{4}\/\d{2}\/\d{2}\(.\) *\d{2}:\d{2}:\d{2}(\.\d+)?( ID:[ -~｡-ﾟ]+)?`)
@@ -90,7 +90,7 @@ func (bot *Persona) messageFromItem(item Item) (msg string, err error) {
 	rep = regexp.MustCompile(`(http(s)?:\/\/)?([\w\-]+\.)+[\w-]+(\/[\w\- .\/?%&=]*)?`)
 	txt = rep.ReplaceAllString(txt, "　")
 
-	log.Printf("trace: id %d Jumanに食わせるsummary：%s\n\n", item.ID, txt)
+	log.Printf("trace: id %d Jumanに食わせるcontent：%s\n\n", item.ID, txt)
 
 	result, err := parse(txt)
 	if err != nil {

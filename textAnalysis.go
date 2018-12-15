@@ -103,7 +103,7 @@ func (result parseResult) contain(str string) bool {
 	for _, node := range result.Nodes {
 		// 3番目の要素が基本形
 		if node[2] == str {
-			log.Printf("info: 一致した単語：%s", str)
+			log.Printf("trace: 一致した単語：%s", str)
 			return true
 		}
 	}
