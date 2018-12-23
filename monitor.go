@@ -12,7 +12,7 @@ import (
 
 // moitorは、websocketでタイムラインを監視して反応する。
 func (bot *Persona) monitor(ctx context.Context) {
-	log.Printf("trace: %s がタイムライン監視を開始しました。", bot.Name)
+	log.Printf("info: %s がタイムライン監視を開始しました。", bot.Name)
 	newCtx, cancel := context.WithCancel(ctx)
 	evch, err := bot.openStreaming(newCtx)
 	if err != nil {

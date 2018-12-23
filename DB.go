@@ -20,6 +20,7 @@ type Item struct {
 	Title   string
 	URL     string
 	Content string
+	Summary	string
 }
 
 // newDBは、新たなデータベース接続を作成する。
@@ -99,7 +100,7 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 	// itemsテーブルから新規itemを取得
 	rows, err := db.Query(`
 		SELECT
-			id, title, url, content
+			id, title, url, summary
 		FROM
 			items
 		WHERE
@@ -118,12 +119,12 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 	items := make([]Item, 0)
 	for rows.Next() {
 		var id int
-		var title, url, content string
-		if err := rows.Scan(&id, &title, &url, &content); err != nil {
+		var title, url, summary string
+		if err := rows.Scan(&id, &title, &url, &summary); err != nil {
 			log.Printf("info: itemsテーブルから一行の情報取得に失敗しました。：%s\n", err)
 			continue
 		}
-		items = append(items, Item{id, title, url, content})
+		items = append(items, Item{ID: id, Title: title, URL: url, Summary: summary})
 	}
 	err = rows.Err()
 	if err != nil {
@@ -135,12 +136,11 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 	// 結果から、興味のある物件を収集
 	myItems := make([]Item, 0)
 	for _, item := range items {
-		contentStr := item.Content
-		if !strings.HasPrefix(contentStr, item.Title) {
-			contentStr = item.Title + "。\n" + contentStr
+		sumStr := item.Title
+		if item.Summary != item.Title {
+			sumStr = item.Title + "。\n" + textContent(item.Summary)
 		}
-
-		result, err := parse(contentStr)
+		result, err := parse(sumStr)
 		if err != nil {
 			log.Printf("info: id: %d のサマリーのパースに失敗しました。\n", item.ID)
 			continue
@@ -153,7 +153,7 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 		for _, w := range bot.Keywords {
 			if result.contain(w) {
 				myItems = append(myItems, item)
-				log.Printf("info: 収集されたitem_id: %d、 content：%s", item.ID, contentStr)
+				log.Printf("trace: 収集されたitem_id: %d、 サマリー：%s", item.ID, sumStr)
 				break
 			}
 		}
@@ -231,7 +231,7 @@ func (db *DB) pickItem(bot *Persona) (item Item, err error) {
 			log.Printf("info: itemsテーブルから一行の情報取得に失敗しました。%s\n", err)
 			continue
 		}
-		items = append(items, Item{id, title, url, content})
+		items = append(items, Item{ID: id, Title: title, URL: url, Content: content})
 	}
 	err = rows.Err()
 	if err != nil {

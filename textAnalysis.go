@@ -14,7 +14,7 @@ type parseResult struct {
 	Nodes [][]string
 }
 
-// textContentsは、htmlからテキストを抽出する。
+// textContentは、htmlからテキストを抽出する。
 // https://github.com/mattn/go-mastodon/blob/master/cmd/mstdn/main.go より拝借
 func textContent(s string) string {
 	doc, err := html.Parse(strings.NewReader(s))
@@ -92,7 +92,7 @@ func parse(text string) (result parseResult, err error) {
 	result = parseResult{nodes}
 
 	if strange {
-		log.Printf("info: 解析異常が出たテキスト：%s", safeStr)
+		log.Printf("trace: 解析異常が出たテキスト：%s", safeStr)
 	}
 
 	return
