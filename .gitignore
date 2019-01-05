@@ -4,3 +4,4 @@ cmd/**/*.json
 cmd/test
 cmd/mastobots/mastobots
 *.backup
+.DS_Store
