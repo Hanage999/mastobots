@@ -6,13 +6,14 @@ import (
 	"log"
 	"math/rand"
 	"regexp"
+	"runtime"
 	"strings"
 	"time"
 )
 
 // moitorは、websocketでタイムラインを監視して反応する。
 func (bot *Persona) monitor(ctx context.Context) {
-	log.Printf("info: %s がタイムライン監視を開始しました。", bot.Name)
+	log.Printf("info: %s がタイムライン監視を開始しました。goroutines = %d", bot.Name, runtime.NumGoroutine())
 	newCtx, cancel := context.WithCancel(ctx)
 	evch, err := bot.openStreaming(newCtx)
 	if err != nil {
@@ -40,6 +41,7 @@ LOOP:
 			case *mastodon.ErrorEvent:
 				time.Sleep(time.Duration(rand.Intn(5000) + 1000) * time.Millisecond)
 				if ctx.Err() != nil {
+					log.Printf("info: %s が今日のタイムライン監視を終了しました。ctx.Err() = %s, t.Error() = %s goroutines = %d", bot.Name, ctx.Err(), t.Error(), runtime.NumGoroutine())
 					break LOOP
 				}
 				log.Printf("info: %s の接続が切れました。再接続します：%s\n", bot.Name, t.Error())
@@ -48,7 +50,8 @@ LOOP:
 				break LOOP
 			}
 		case <-ctx.Done():
-			log.Printf("info: %s が今日のタイムライン監視を終了しました", bot.Name)
+			<-evch
+			log.Printf("info: %s が今日のタイムライン監視を終了しました。ctx.Err() = %s goroutines = %d", bot.Name, ctx.Err(), runtime.NumGoroutine())
 			break LOOP
 		}
 	}

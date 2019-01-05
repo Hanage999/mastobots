@@ -6,13 +6,14 @@ import (
 	"log"
 	"math/rand"
 	"regexp"
+	"runtime"
 	"strings"
 	"time"
 )
 
 // periodicTootは、指定された時刻（分）を皮切りに一定時間ごとにトゥートする。
 func (bot *Persona) periodicToot(ctx context.Context, db *DB) {
-	log.Printf("info: %s が今日の定期トゥートを開始しました。", bot.Name)
+	log.Printf("info: %s が今日の定期トゥートを開始しました。goroutines = %d", bot.Name, runtime.NumGoroutine())
 
 	tc := tickAfterWait(ctx, until(-1, bot.FirstFire), time.Duration(bot.Interval)*time.Minute)
 LOOP:
@@ -36,7 +37,7 @@ LOOP:
 				}
 			}()
 		case <-ctx.Done():
-			log.Printf("info: %s が今日の定期トゥートを終了しました", bot.Name)
+			log.Printf("info: %s が今日の定期トゥートを終了しました。gotoutines = %d", bot.Name, runtime.NumGoroutine())
 			break LOOP
 		}
 	}
