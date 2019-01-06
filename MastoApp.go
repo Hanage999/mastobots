@@ -3,18 +3,19 @@ package mastobots
 import (
 	"context"
 	"errors"
-	"github.com/mattn/go-mastodon"
 	"log"
+
+	mastodon "github.com/mattn/go-mastodon"
 )
 
-// MastoAppは、Mastodonクライアントの情報を格納する。
+// MastoApp は、Mastodonクライアントの情報を格納する。
 type MastoApp struct {
 	Server       string
 	ClientID     string
 	ClientSecret string
 }
 
-// initMastoAppは、新たに登録すべきマストドンクライアントアプリケーション登録し、
+// initMastoApp は、新たに登録すべきマストドンクライアントアプリケーション登録し、
 // 新旧のアプリを全て含んだスライスを返す。
 func initMastoApps(apps []*MastoApp, appName, instance string) (updatedApps []*MastoApp, err error) {
 	for _, a := range apps {
@@ -33,7 +34,7 @@ func initMastoApps(apps []*MastoApp, appName, instance string) (updatedApps []*M
 	return
 }
 
-// newMastoAppは、インスタンスに新たにMastoAppを登録し、それを返す。
+// newMastoApp は、インスタンスに新たにMastoAppを登録し、それを返す。
 func newMastoApp(name, instance string) (app MastoApp, err error) {
 	newApp, err := mastodon.RegisterApp(context.Background(), &mastodon.AppConfig{
 		Server:     instance,
@@ -53,7 +54,7 @@ func newMastoApp(name, instance string) (app MastoApp, err error) {
 	return
 }
 
-// getAppは、インスタンスのためのMastoAppを取得する。
+// getApp は、インスタンスのためのMastoAppを取得する。
 func getApp(instance string, apps []*MastoApp) (app *MastoApp, err error) {
 	for _, a := range apps {
 		if a.Server == instance && a.ClientID != "" && a.ClientSecret != "" {

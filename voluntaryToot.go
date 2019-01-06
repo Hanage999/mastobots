@@ -2,18 +2,18 @@ package mastobots
 
 import (
 	"context"
-	"github.com/mattn/go-mastodon"
 	"log"
 	"math/rand"
 	"regexp"
-	"runtime"
 	"strings"
 	"time"
+
+	mastodon "github.com/mattn/go-mastodon"
 )
 
 // periodicTootは、指定された時刻（分）を皮切りに一定時間ごとにトゥートする。
 func (bot *Persona) periodicToot(ctx context.Context, db *DB) {
-	log.Printf("info: %s が今日の定期トゥートを開始しました。goroutines = %d", bot.Name, runtime.NumGoroutine())
+	log.Printf("info: %s が今日の定期トゥートを開始しました。", bot.Name)
 
 	tc := tickAfterWait(ctx, until(-1, bot.FirstFire), time.Duration(bot.Interval)*time.Minute)
 LOOP:
@@ -37,7 +37,7 @@ LOOP:
 				}
 			}()
 		case <-ctx.Done():
-			log.Printf("info: %s が今日の定期トゥートを終了しました。gotoutines = %d", bot.Name, runtime.NumGoroutine())
+			log.Printf("info: %s が今日の定期トゥートを終了しました。", bot.Name)
 			break LOOP
 		}
 	}
@@ -78,7 +78,7 @@ func (bot *Persona) createNewsToot(db *DB) (toot mastodon.Toot, item Item, err e
 // messageFromItemは、itemの内容から投稿文を作成する。
 func (bot *Persona) messageFromItem(item Item) (msg string, err error) {
 	txt := item.Title
-	if !strings.HasPrefix(item.Content,txt) {
+	if !strings.HasPrefix(item.Content, txt) {
 		txt = txt + "。" + item.Content
 	}
 	log.Printf("trace: 素のcontent：%s\n", txt)

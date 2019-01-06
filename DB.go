@@ -2,25 +2,26 @@ package mastobots
 
 import (
 	"database/sql"
-	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"math/rand"
 	"strings"
 	"time"
+
+	_ "github.com/go-sql-driver/mysql" // for sql library
 )
 
-// DBは、データベース接続を格納する。
+// DB は、データベース接続を格納する。
 type DB struct {
 	*sql.DB
 }
 
-// Itemは、itemsテーブルの行データを格納する
+// Item は、itemsテーブルの行データを格納する
 type Item struct {
 	ID      int
 	Title   string
 	URL     string
 	Content string
-	Summary	string
+	Summary string
 }
 
 // newDBは、新たなデータベース接続を作成する。

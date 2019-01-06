@@ -2,13 +2,14 @@ package mastobots
 
 import (
 	"context"
-	"github.com/mattn/go-mastodon"
 	"log"
 	"math/rand"
 	"time"
+
+	mastodon "github.com/mattn/go-mastodon"
 )
 
-// Personaは、botの属性を格納する。
+// Persona は、botの属性を格納する。
 type Persona struct {
 	Name      string
 	Instance  string
@@ -38,7 +39,7 @@ func initPersona(apps []*MastoApp, bot *Persona) (err error) {
 
 	bot.MyApp, err = getApp(bot.Instance, apps)
 	if err != nil {
-		log.Printf("alert: %s のためのアプリが取得できませんでした。：%s\n", bot.Name)
+		log.Printf("alert: %s のためのアプリが取得できませんでした。：%s\n", bot.Name, err)
 		return
 	}
 

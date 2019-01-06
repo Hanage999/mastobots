@@ -2,24 +2,25 @@ package mastobots
 
 import (
 	"context"
-	"github.com/comail/colog"
-	"github.com/spf13/viper"
 	"log"
 	"os"
 	"os/exec"
 	"strconv"
 	"time"
+
+	"github.com/comail/colog"
+	"github.com/spf13/viper"
 )
 
 var (
-	version       string = "1"
-	revision      string = "0"
-	maxRetry      int    = 5
-	retryInterval        = time.Duration(5) * time.Second
+	version       = "1"
+	revision      = "0"
+	maxRetry      = 5
+	retryInterval = time.Duration(5) * time.Second
 	locationCodes map[string]interface{}
 )
 
-// Initializeは、config.ymlに従ってbotとデータベース接続を初期化する。
+// Initialize は、config.ymlに従ってbotとデータベース接続を初期化する。
 func Initialize() (bots []*Persona, db *DB, err error) {
 	// colog 設定
 	if version == "" {
@@ -144,7 +145,7 @@ func Initialize() (bots []*Persona, db *DB, err error) {
 	return
 }
 
-// ActivateBotsは、botたちを活動させる。
+// ActivateBots は、botたちを活動させる。
 func ActivateBots(bots []*Persona, db *DB, p int) (err error) {
 	// 全てをシャットダウンするタイムアウトの設定
 	ctx := context.Background()

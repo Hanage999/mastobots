@@ -10,6 +10,7 @@ func tickAfterWait(ctx context.Context, wait time.Duration, itvl time.Duration) 
 	ch = make(chan string)
 
 	go func() {
+		defer close(ch)
 		t := time.NewTimer(wait)
 		select {
 		case <-t.C:
@@ -20,14 +21,14 @@ func tickAfterWait(ctx context.Context, wait time.Duration, itvl time.Duration) 
 		}
 
 		tk := time.NewTicker(itvl)
-	TICKER:
+		defer tk.Stop()
+
 		for {
 			select {
 			case <-tk.C:
 				ch <- "routine tick"
 			case <-ctx.Done():
-				tk.Stop()
-				break TICKER
+				return
 			}
 		}
 

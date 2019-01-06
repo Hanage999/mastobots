@@ -2,20 +2,20 @@ package mastobots
 
 import (
 	"context"
-	"github.com/mattn/go-mastodon"
 	"log"
 	"math/rand"
 	"regexp"
 	"runtime"
 	"strings"
 	"time"
+
+	mastodon "github.com/mattn/go-mastodon"
 )
 
 // moitorは、websocketでタイムラインを監視して反応する。
 func (bot *Persona) monitor(ctx context.Context) {
-	log.Printf("info: %s がタイムライン監視を開始しました。goroutines = %d", bot.Name, runtime.NumGoroutine())
-	newCtx, cancel := context.WithCancel(ctx)
-	evch, err := bot.openStreaming(newCtx)
+	log.Printf("info: %s がタイムライン監視を開始しました。", bot.Name)
+	evch, err := bot.openStreaming(ctx)
 	if err != nil {
 		log.Printf("info: %s がストリーミングを受信開始できませんでした。\n", bot.Name)
 		return
@@ -28,41 +28,35 @@ LOOP:
 			switch t := ev.(type) {
 			case *mastodon.UpdateEvent:
 				go func() {
-					if err := bot.respondToUpdate(newCtx, t); err != nil {
+					if err := bot.respondToUpdate(ctx, t); err != nil {
 						log.Printf("info: %s がトゥートに反応できませんでした。\n", bot.Name)
 					}
 				}()
 			case *mastodon.NotificationEvent:
 				go func() {
-					if err := bot.respondToNotification(newCtx, t); err != nil {
+					if err := bot.respondToNotification(ctx, t); err != nil {
 						log.Printf("info: %s が通知に反応できませんでした。\n", bot.Name)
 					}
 				}()
 			case *mastodon.ErrorEvent:
-				time.Sleep(time.Duration(rand.Intn(5000) + 1000) * time.Millisecond)
 				if ctx.Err() != nil {
-					log.Printf("info: %s が今日のタイムライン監視を終了しました。ctx.Err() = %s, t.Error() = %s goroutines = %d", bot.Name, ctx.Err(), t.Error(), runtime.NumGoroutine())
 					break LOOP
 				}
-				log.Printf("info: %s の接続が切れました。再接続します：%s\n", bot.Name, t.Error())
-				cancel()
-				go bot.monitor(ctx)
-				break LOOP
+
+				continue
 			}
 		case <-ctx.Done():
-			<-evch
-			log.Printf("info: %s が今日のタイムライン監視を終了しました。ctx.Err() = %s goroutines = %d", bot.Name, ctx.Err(), runtime.NumGoroutine())
 			break LOOP
 		}
 	}
 
+	log.Printf("info: %s が今日のタイムライン監視を終了しました。ctx.Err() = %s", bot.Name, ctx.Err())
 }
 
 // openStreamingは、HTLのストリーミング接続を開始する。失敗したらmaxRetryを上限に再試行する。
 func (bot *Persona) openStreaming(ctx context.Context) (evch chan mastodon.Event, err error) {
-	wsc := bot.Client.NewWSClient()
 	for i := 0; i < maxRetry; i++ {
-		evch, err = wsc.StreamingWSUser(ctx)
+		evch, err = bot.Client.StreamingUser(ctx)
 		if err != nil {
 			time.Sleep(retryInterval)
 			log.Printf("info: %s のストリーミング受信開始をリトライします：%s\n", bot.Name, err)
@@ -117,8 +111,9 @@ func (bot *Persona) respondToUpdate(ctx context.Context, ev *mastodon.UpdateEven
 func (bot *Persona) respondToNotification(ctx context.Context, ev *mastodon.NotificationEvent) (err error) {
 	switch ev.Notification.Type {
 	case "mention":
+		log.Printf("info: Goroutines: %d", runtime.NumGoroutine())
 		if err = bot.respondToMention(ctx, ev.Notification.Account, ev.Notification.Status); err != nil {
-			log.Printf("info: %s がメンションに反応できませんでした。\n")
+			log.Printf("info: %s がメンションに反応できませんでした。\n", bot.Name)
 			return
 		}
 	case "reblog":
@@ -172,7 +167,7 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 		}
 		data, err := GetRandomWeather(dt)
 		if err != nil {
-			log.Printf("info: %s が天気の取得に失敗しました。")
+			log.Printf("info: %s が天気の取得に失敗しました。", bot.Name)
 			return err
 		}
 		ignoreStr := ""

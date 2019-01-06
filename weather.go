@@ -3,51 +3,52 @@ package mastobots
 import (
 	"encoding/json"
 	"fmt"
-	"golang.org/x/net/html"
 	"log"
 	"math/rand"
 	"net/http"
 	"regexp"
 	"strings"
+
+	"golang.org/x/net/html"
 )
 
-// WeatherDataは、livedoor天気予報のAPIが返してくるjsonデータを保持する
+// WeatherData は、livedoor天気予報のAPIが返してくるjsonデータを保持する
 type WeatherData struct {
 	Forecasts []Forecast
 	Location  Location
 }
 
-// Forcastは、livedoor天気予報のAPIが返してくるjsonデータを保持する。
+// Forecast は、livedoor天気予報のAPIが返してくるjsonデータを保持する。
 type Forecast struct {
-	DateLabel   string `json: "dateLabel"`
-	Telop       string `json: "telop"`
-	Date        string `json: "date"`
+	DateLabel   string `json:"dateLabel"`
+	Telop       string `json:"telop"`
+	Date        string `json:"date"`
 	Temperature struct {
 		Min struct {
-			Celsius    string `json: "celsius"`
-			Fahrenheit string `json: "fahrenheit"`
+			Celsius    string `json:"celsius"`
+			Fahrenheit string `json:"fahrenheit"`
 		}
 		Max struct {
-			Celsius    string `json: "celsius"`
-			Fahrenheit string `json: "fahrenheit"`
+			Celsius    string `json:"celsius"`
+			Fahrenheit string `json:"fahrenheit"`
 		}
 	}
 	Image struct {
-		Width  int    `json: "width"`
-		URL    string `json: "url"`
-		Title  string `json: "title"`
-		Height int    `json: "height"`
+		Width  int    `json:"width"`
+		URL    string `json:"url"`
+		Title  string `json:"title"`
+		Height int    `json:"height"`
 	}
 }
 
-// Locationは、livedoor天気予報のAPIが返してくるjsonデータを保持する
+// Location は、livedoor天気予報のAPIが返してくるjsonデータを保持する
 type Location struct {
-	City       string `json: "city"`
-	Area       string `json: "area"`
-	Prefecture string `json: "prefecture"`
+	City       string `json:"city"`
+	Area       string `json:"area"`
+	Prefecture string `json:"prefecture"`
 }
 
-// getLocationCodesは、livedoor天気予報の地域コードを取得する
+// getLocationCodes は、livedoor天気予報の地域コードを取得する
 func getLocationCodes() (results map[string]interface{}, err error) {
 	url := "http://weather.livedoor.com/forecast/rss/primary_area.xml"
 
@@ -94,7 +95,7 @@ func getLocationCodes() (results map[string]interface{}, err error) {
 	return
 }
 
-// getRandomWeatherは、livedoor天気予報でランダムな地域の天気を取得する。
+// GetRandomWeather は、livedoor天気予報でランダムな地域の天気を取得する。
 // when: 0は今日、1は明日、2は明後日
 func GetRandomWeather(when int) (data WeatherData, err error) {
 	_, code, err := RandomMap(locationCodes)
@@ -137,7 +138,7 @@ func GetRandomWeather(when int) (data WeatherData, err error) {
 	return
 }
 
-// EmojifyWeatherは、天気を絵文字で表現する。
+// EmojifyWeather は、天気を絵文字で表現する。
 func emojifyWeather(telop string) (emojiStr string, err error) {
 	if telop == "" {
 		err = fmt.Errorf("info: 天気テキストが空です。")
@@ -160,7 +161,7 @@ func emojifyWeather(telop string) (emojiStr string, err error) {
 	return
 }
 
-// forecastMessageは、天気予報を告げるメッセージを返す。
+// forecastMessage は、天気予報を告げるメッセージを返す。
 func forecastMessage(data WeatherData, assertion string) (msg string) {
 	maxT := ""
 	if t := data.Forecasts[0].Temperature.Max.Celsius; t != "" {
@@ -189,11 +190,11 @@ func forecastMessage(data WeatherData, assertion string) (msg string) {
 	return
 }
 
-// randomMapは、ランダムにmapを選び、そのキーと値を返す。
+// RandomMap は、ランダムにmapを選び、そのキーと値を返す。
 func RandomMap(m map[string]interface{}) (loc string, code interface{}, err error) {
 	l := len(m)
 	if l == 0 {
-		err = fmt.Errorf("mapに要素がありません。\n")
+		err = fmt.Errorf("mapに要素がありません")
 		return
 	}
 
@@ -214,7 +215,7 @@ func RandomMap(m map[string]interface{}) (loc string, code interface{}, err erro
 	return
 }
 
-// judgeWeatherRequestは、天気の要望の内容を判断する
+// judgeWeatherRequest は、天気の要望の内容を判断する
 func judgeWeatherRequest(txt string) (lc string, dt int, err error) {
 	result, err := parse(txt)
 	if err != nil {
@@ -227,7 +228,7 @@ func judgeWeatherRequest(txt string) (lc string, dt int, err error) {
 	return
 }
 
-// getWeatherQueryLocationは、天気情報の要望トゥートの形態素解析結果に地名が存在すればそれを返す。
+// getWeatherQueryLocation は、天気情報の要望トゥートの形態素解析結果に地名が存在すればそれを返す。
 func (result parseResult) getWeatherQueryLocation() (loc string) {
 	for _, node := range result.Nodes {
 		// 5番目の要素は品詞詳細、11番目の要素は諸情報
@@ -240,7 +241,7 @@ func (result parseResult) getWeatherQueryLocation() (loc string) {
 	return
 }
 
-// getWeatherQueryDateは、天気情報の要望トゥートの形態素解析結果に日の指定があればそれを返す。
+// getWeatherQueryDate は、天気情報の要望トゥートの形態素解析結果に日の指定があればそれを返す。
 func (result parseResult) getWeatherQueryDate() (date int) {
 	for _, node := range result.Nodes {
 		switch node[1] {
