@@ -2,11 +2,12 @@ package main
 
 import (
 	"flag"
-	"github.com/hanage999/mastobots"
 	"log"
 	"math/rand"
 	"os"
 	"time"
+
+	"github.com/hanage999/mastobots"
 )
 
 func main() {
@@ -25,7 +26,7 @@ func run() (exitCode int) {
 	var p = flag.Int("p", 0, "実行終了までの時間（分）")
 	flag.Parse()
 
-	// botsの準備
+	// もろもろ準備
 	bots, db, err := mastobots.Initialize()
 	if err != nil {
 		log.Printf("alert: 初期化に失敗しました。理由：%s\n", err)
