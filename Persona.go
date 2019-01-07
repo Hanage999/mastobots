@@ -31,6 +31,7 @@ type Persona struct {
 	WakeMin   int
 	SleepHour int
 	SleepMin  int
+	Awake     time.Duration
 }
 
 // initPersonaは、botとインスタンスの接続を確立する。
@@ -76,61 +77,72 @@ func (bot *Persona) life(ctx context.Context, db *DB) {
 		return
 	}
 
-	var activeDur time.Duration
 	if sleepTime.Before(wakeTime) {
-		activeDur = sleepTime.Add(24 * time.Hour).Sub(wakeTime)
+		bot.Awake = sleepTime.Add(24 * time.Hour).Sub(wakeTime)
 	} else {
-		activeDur = sleepTime.Sub(wakeTime)
+		bot.Awake = sleepTime.Sub(wakeTime)
 	}
 
 	tillWake := until(bot.WakeHour, bot.WakeMin)
 	tillSleep := until(bot.SleepHour, bot.SleepMin)
-
-	var newCtx context.Context
-	var cancel context.CancelFunc
-
-	if tillSleep.Nanoseconds() < activeDur.Nanoseconds() {
-		newCtx, cancel = context.WithCancel(ctx)
-		bot.activities(newCtx, db)
+	if tillSleep.Nanoseconds() < bot.Awake.Nanoseconds() {
+		tillWake, _ = time.ParseDuration("0s")
 	}
 
-	go func() {
-		wakeTick := tickAfterWait(ctx, tillWake, 24*time.Hour)
-		sleepTick := tickAfterWait(ctx, tillSleep, 24*time.Hour)
+	bot.daylife(ctx, db, tillWake, tillSleep)
+}
+
+func (bot *Persona) daylife(ctx context.Context, db *DB, sleep time.Duration, active time.Duration) {
+	asleep := false
+	if sleep.Seconds() > 1 {
+		asleep = true
+		t := time.NewTimer(sleep)
+		defer t.Stop()
 	LOOP:
 		for {
 			select {
-			case <-wakeTick:
-				newCtx, cancel = context.WithCancel(ctx)
-				bot.activities(newCtx, db)
-				go func() {
-					weatherStr := ""
-					data, err := GetRandomWeather(0)
-					if err != nil {
-						log.Printf("info: %s が天気予報を取ってこれませんでした。", bot.Name)
-					} else {
-						weatherStr = "。" + forecastMessage(data, bot.Assertion)
-					}
-					toot := mastodon.Toot{Status: "おはようございます" + bot.Assertion + weatherStr}
-					if err := bot.post(newCtx, toot); err != nil {
-						log.Printf("info: %s がトゥートできませんでした。今回は諦めます……\n", bot.Name)
-					}
-				}()
-			case <-sleepTick:
-				toot := mastodon.Toot{Status: "おやすみなさい" + bot.Assertion + "💤……"}
-				if err := bot.post(newCtx, toot); err != nil {
-					log.Printf("info: %s がトゥートできませんでした。今回は諦めます……\n", bot.Name)
-				}
-				cancel()
-			case <-ctx.Done():
+			case <-t.C:
 				break LOOP
+			case <-ctx.Done():
+				return
 			}
 		}
-	}()
+	}
+
+	newCtx, cancel := context.WithTimeout(ctx, active)
+	defer cancel()
+
+	bot.activities(newCtx, db)
+	if asleep {
+		go func() {
+			weatherStr := ""
+			data, err := GetRandomWeather(0)
+			if err != nil {
+				log.Printf("info: %s が天気予報を取ってこれませんでした。", bot.Name)
+			} else {
+				weatherStr = "。" + forecastMessage(data, bot.Assertion)
+			}
+			toot := mastodon.Toot{Status: "おはようございます" + bot.Assertion + weatherStr}
+			if err := bot.post(newCtx, toot); err != nil {
+				log.Printf("info: %s がトゥートできませんでした。今回は諦めます……\n", bot.Name)
+			}
+		}()
+	}
+
+	select {
+	case <-newCtx.Done():
+		toot := mastodon.Toot{Status: "おやすみなさい" + bot.Assertion + "💤……"}
+		if err := bot.post(ctx, toot); err != nil {
+			log.Printf("info: %s がトゥートできませんでした。今回は諦めます……\n", bot.Name)
+		}
+		sleep = until(bot.WakeHour, bot.WakeMin)
+		bot.daylife(ctx, db, sleep, bot.Awake)
+	case <-ctx.Done():
+	}
 
 }
 
-// activitiesは、botの活動の全てを実行する
+// activities は、botの活動の全てを実行する
 func (bot *Persona) activities(ctx context.Context, db *DB) {
 	go bot.periodicToot(ctx, db)
 	go bot.monitor(ctx)
