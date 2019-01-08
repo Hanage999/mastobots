@@ -15,7 +15,7 @@ MySQLデータベースに保存された日本語のRSSアイテムをJuman++�
 + Juman++ 2.0.0-rc2
 
 ## 依存ソフトウェア
-※これらがあらかじめインストールされていないと起動しません。
+以下があらかじめインストールされていないと起動しません。
 + MySQL
 + [Juman++](http://nlp.ist.i.kyoto-u.ac.jp/index.php?JUMAN++)
 
