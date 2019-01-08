@@ -140,6 +140,10 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 		name = name + " "
 	}
 	txt := textContent(status.Content)
+	jm, err := parse(txt)
+	if err != nil {
+		return
+	}
 
 	msg := ""
 
@@ -165,8 +169,8 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 			yon = "いい" + bot.Assertion + "よ"
 		}
 		msg = "@" + account.Acct + " " + bot.Starter + name + bot.Title + "。" + yon
-	case strings.Contains(txt, "天気"):
-		lc, dt, err := judgeWeatherRequest(txt)
+	case jm.isWeatherRelated():
+		lc, dt, err := jm.judgeWeatherRequest()
 		if err != nil {
 			return err
 		}

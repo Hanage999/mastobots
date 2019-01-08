@@ -3,10 +3,11 @@ package mastobots
 import (
 	"bytes"
 	"errors"
-	"golang.org/x/net/html"
 	"log"
 	"os/exec"
 	"strings"
+
+	"golang.org/x/net/html"
 )
 
 // parseResultはテキストの形態素解析結果を格納する。
@@ -49,7 +50,7 @@ func textContent(s string) string {
 // parseは、Juman++で文字列を形態素解析して結果を返す。
 func parse(text string) (result parseResult, err error) {
 	if text == "" {
-		err = errors.New("解析する文字列が空です。")
+		err = errors.New("解析する文字列が空です")
 		log.Printf("info: %s", err)
 		return
 	}

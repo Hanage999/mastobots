@@ -216,12 +216,7 @@ func RandomMap(m map[string]interface{}) (loc string, code interface{}, err erro
 }
 
 // judgeWeatherRequest は、天気の要望の内容を判断する
-func judgeWeatherRequest(txt string) (lc string, dt int, err error) {
-	result, err := parse(txt)
-	if err != nil {
-		return
-	}
-
+func (result parseResult) judgeWeatherRequest() (lc string, dt int, err error) {
 	lc = result.getWeatherQueryLocation()
 	dt = result.getWeatherQueryDate()
 
@@ -255,4 +250,18 @@ func (result parseResult) getWeatherQueryDate() (date int) {
 	}
 
 	return
+}
+
+// containは、文字列が天気関係の話かどうかを調べる。
+func (result parseResult) isWeatherRelated() bool {
+	kws := [...]string{"天気", "暖かい", "暑い", "雨", "晴", "曇", "雪", "風", "嵐", "湿", "乾"}
+	for _, node := range result.Nodes {
+		for _, w := range kws {
+			if strings.Contains(node[11], w) {
+				return true
+			}
+		}
+	}
+
+	return false
 }
