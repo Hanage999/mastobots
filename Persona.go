@@ -66,8 +66,8 @@ func initPersona(apps []*MastoApp, bot *Persona) (err error) {
 	return
 }
 
-// lifeは、botの１日の生活リズムを作る
-func (bot *Persona) life(ctx context.Context, db *DB) {
+// spawn は、botの活動を開始する
+func (bot *Persona) spawn(ctx context.Context, db *DB) {
 	now := time.Now()
 	wakeTime := time.Date(now.Year(), now.Month(), now.Day(), bot.WakeHour, bot.WakeMin, 0, 0, now.Location())
 	sleepTime := time.Date(now.Year(), now.Month(), now.Day(), bot.SleepHour, bot.SleepMin, 0, 0, now.Location())
@@ -92,6 +92,7 @@ func (bot *Persona) life(ctx context.Context, db *DB) {
 	bot.daylife(ctx, db, tillWake, tillSleep)
 }
 
+// daylife は、botの活動サイクルを作る
 func (bot *Persona) daylife(ctx context.Context, db *DB, sleep time.Duration, active time.Duration) {
 	asleep := false
 	if sleep.Seconds() > 1 {

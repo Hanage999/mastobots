@@ -254,7 +254,7 @@ func (result parseResult) getWeatherQueryDate() (date int) {
 
 // containは、文字列が天気関係の話かどうかを調べる。
 func (result parseResult) isWeatherRelated() bool {
-	kws := [...]string{"天気", "暖かい", "暑い", "雨", "晴", "曇", "雪", "風", "嵐", "湿", "乾"}
+	kws := [...]string{"天気", "気温", "暖", "暑", "雨", "晴", "曇", "雪", "風", "嵐", "雹", "湿", "乾"}
 	for _, node := range result.Nodes {
 		for _, w := range kws {
 			if strings.Contains(node[11], w) {

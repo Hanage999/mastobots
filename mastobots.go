@@ -161,7 +161,7 @@ func ActivateBots(bots []*Persona, db *DB, p int) (err error) {
 
 	// 行ってらっしゃい
 	for _, bot := range bots {
-		go bot.life(ctx, db)
+		go bot.spawn(ctx, db)
 	}
 
 	<-ctx.Done()
