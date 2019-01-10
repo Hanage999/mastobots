@@ -166,6 +166,5 @@ func ActivateBots(bots []*Persona, db *DB, p int) (err error) {
 
 	<-ctx.Done()
 	log.Printf("info: %d分経ったのでシャットダウンします。\n", p)
-
 	return
 }

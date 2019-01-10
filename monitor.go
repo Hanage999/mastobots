@@ -41,7 +41,6 @@ func (bot *Persona) monitor(ctx context.Context) {
 		case *mastodon.ErrorEvent:
 			if ctx.Err() != nil {
 				log.Printf("info: %s が今日のタイムライン監視を終了しました。ctx.Err() = %s", bot.Name, ctx.Err())
-
 				return
 			}
 
@@ -49,11 +48,9 @@ func (bot *Persona) monitor(ctx context.Context) {
 			log.Printf("info: %s の接続が切れました。%dミリ秒後に再接続します：%s\n", bot.Name, itvl, t.Error())
 			time.Sleep(time.Duration(itvl) * time.Millisecond)
 			go bot.monitor(ctx)
-
 			return
 		}
 	}
-
 }
 
 // openStreamingは、HTLのストリーミング接続を開始する。失敗したらmaxRetryを上限に再試行する。
@@ -69,9 +66,7 @@ func (bot *Persona) openStreaming(ctx context.Context) (evch chan mastodon.Event
 		log.Printf("trace: %s のストリーミング受信に成功しました。\n", bot.Name)
 		return
 	}
-
 	log.Printf("info: %s のストリーミング受信開始に失敗しました。：%s\n", bot.Name, err)
-
 	return
 }
 
@@ -107,7 +102,6 @@ func (bot *Persona) respondToUpdate(ctx context.Context, ev *mastodon.UpdateEven
 			break
 		}
 	}
-
 	return
 }
 
@@ -128,7 +122,6 @@ func (bot *Persona) respondToNotification(ctx context.Context, ev *mastodon.Noti
 	case "follow":
 		// TODO
 	}
-
 	return
 }
 
@@ -193,6 +186,5 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 			return err
 		}
 	}
-
 	return
 }

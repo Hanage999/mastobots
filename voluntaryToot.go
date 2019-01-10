@@ -41,7 +41,6 @@ LOOP:
 			break LOOP
 		}
 	}
-
 }
 
 // createNewsTootはトゥートする内容を作成する。
@@ -71,7 +70,6 @@ func (bot *Persona) createNewsToot(db *DB) (toot mastodon.Toot, item Item, err e
 	if msg != "" {
 		toot = mastodon.Toot{Status: msg}
 	}
-
 	return
 }
 
@@ -131,9 +129,7 @@ func (bot *Persona) messageFromItem(item Item) (msg string, err error) {
 
 	// リンクとハッシュタグを追加
 	msg += "\n\n【" + item.Title + "】 " + item.URL + "\n\n" + hashtagStr
-
 	log.Printf("trace: %s のトゥート内容：\n\n%s", bot.Name, msg)
-
 	return
 }
 

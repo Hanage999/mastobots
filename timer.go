@@ -31,7 +31,6 @@ func tickAfterWait(ctx context.Context, wait time.Duration, itvl time.Duration) 
 				return
 			}
 		}
-
 	}()
 
 	return
@@ -56,6 +55,5 @@ func until(hour, min int) (dur time.Duration) {
 	}
 
 	dur = t.Sub(now)
-
 	return
 }

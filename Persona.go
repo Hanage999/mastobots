@@ -68,34 +68,34 @@ func initPersona(apps []*MastoApp, bot *Persona) (err error) {
 
 // spawn は、botの活動を開始する
 func (bot *Persona) spawn(ctx context.Context, db *DB) {
-	now := time.Now()
-	wakeTime := time.Date(now.Year(), now.Month(), now.Day(), bot.WakeHour, bot.WakeMin, 0, 0, now.Location())
-	sleepTime := time.Date(now.Year(), now.Month(), now.Day(), bot.SleepHour, bot.SleepMin, 0, 0, now.Location())
+	tillWake := until(bot.WakeHour, bot.WakeMin)
+	tillSleep := until(bot.SleepHour, bot.SleepMin)
+	bot.Awake = tillSleep - tillWake
 
-	if wakeTime.Equal(sleepTime) {
+	if bot.Awake < time.Second && bot.Awake > -1*time.Second {
 		bot.activities(ctx, db)
 		return
 	}
 
-	if sleepTime.Before(wakeTime) {
-		bot.Awake = sleepTime.Add(24 * time.Hour).Sub(wakeTime)
-	} else {
-		bot.Awake = sleepTime.Sub(wakeTime)
+	if bot.Awake < 0 {
+		bot.Awake += 24 * time.Hour
 	}
 
-	tillWake := until(bot.WakeHour, bot.WakeMin)
-	tillSleep := until(bot.SleepHour, bot.SleepMin)
-	if tillSleep.Nanoseconds() < bot.Awake.Nanoseconds() {
-		tillWake, _ = time.ParseDuration("0s")
+	s := tillWake
+	w := bot.Awake
+	if tillSleep < bot.Awake {
+		s, _ = time.ParseDuration("0s")
+		w = tillSleep
 	}
 
 	// あとは任せた
-	go bot.daylife(ctx, db, tillWake, tillSleep)
+	go bot.daylife(ctx, db, s, w)
 }
 
 // daylife は、botの活動サイクルを作る
 func (bot *Persona) daylife(ctx context.Context, db *DB, sleep time.Duration, active time.Duration) {
 	asleep := false
+
 	if sleep.Seconds() > 1 {
 		asleep = true
 		t := time.NewTimer(sleep)
@@ -120,7 +120,7 @@ func (bot *Persona) daylife(ctx context.Context, db *DB, sleep time.Duration, ac
 			weatherStr := ""
 			data, err := GetRandomWeather(0)
 			if err != nil {
-				log.Printf("info: %s が天気予報を取ってこれませんでした。", bot.Name)
+				log.Printf("info: %s が天気予報を取ってこれませんでした。\n", bot.Name)
 			} else {
 				weatherStr = "。" + forecastMessage(data, bot.Assertion)
 			}
@@ -137,11 +137,10 @@ func (bot *Persona) daylife(ctx context.Context, db *DB, sleep time.Duration, ac
 		if err := bot.post(ctx, toot); err != nil {
 			log.Printf("info: %s がトゥートできませんでした。今回は諦めます……\n", bot.Name)
 		}
-		sleep = until(bot.WakeHour, bot.WakeMin)
-		go bot.daylife(ctx, db, sleep, bot.Awake)
+		s := until(bot.WakeHour, bot.WakeMin)
+		go bot.daylife(ctx, db, s, bot.Awake)
 	case <-ctx.Done():
 	}
-
 }
 
 // activities は、botの活動の全てを実行する
@@ -162,7 +161,6 @@ func (bot *Persona) post(ctx context.Context, toot mastodon.Toot) (err error) {
 		}
 		break
 	}
-
 	return
 }
 
@@ -178,7 +176,6 @@ func (bot *Persona) fav(ctx context.Context, id mastodon.ID) (err error) {
 		}
 		break
 	}
-
 	return
 }
 
@@ -194,7 +191,6 @@ func (bot *Persona) follow(ctx context.Context, id mastodon.ID) (err error) {
 		}
 		break
 	}
-
 	return
 }
 
@@ -209,6 +205,5 @@ func (bot *Persona) relationWith(ctx context.Context, id mastodon.ID) (rel []*ma
 		}
 		break
 	}
-
 	return
 }

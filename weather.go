@@ -211,7 +211,6 @@ func RandomMap(m map[string]interface{}) (loc string, code interface{}, err erro
 			i++
 		}
 	}
-
 	return
 }
 
@@ -219,7 +218,6 @@ func RandomMap(m map[string]interface{}) (loc string, code interface{}, err erro
 func (result parseResult) judgeWeatherRequest() (lc string, dt int, err error) {
 	lc = result.getWeatherQueryLocation()
 	dt = result.getWeatherQueryDate()
-
 	return
 }
 
@@ -232,7 +230,6 @@ func (result parseResult) getWeatherQueryLocation() (loc string) {
 			return
 		}
 	}
-
 	return
 }
 
@@ -248,7 +245,6 @@ func (result parseResult) getWeatherQueryDate() (date int) {
 			return
 		}
 	}
-
 	return
 }
 
@@ -262,6 +258,5 @@ func (result parseResult) isWeatherRelated() bool {
 			}
 		}
 	}
-
 	return false
 }

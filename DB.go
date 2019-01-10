@@ -43,7 +43,6 @@ func newDB(cr map[string]string) (db *DB, err error) {
 	}
 
 	db = &DB{dbase}
-
 	return
 }
 
@@ -288,6 +287,5 @@ func (db *DB) deleteItem(bot *Persona, item Item) (err error) {
 	if err != nil {
 		log.Printf("alert: %s がcandidatesから%dの削除に失敗しました。：%s\n", bot.Name, item.ID, err)
 	}
-
 	return
 }
