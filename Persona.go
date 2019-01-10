@@ -89,7 +89,8 @@ func (bot *Persona) spawn(ctx context.Context, db *DB) {
 		tillWake, _ = time.ParseDuration("0s")
 	}
 
-	bot.daylife(ctx, db, tillWake, tillSleep)
+	// あとは任せた
+	go bot.daylife(ctx, db, tillWake, tillSleep)
 }
 
 // daylife は、botの活動サイクルを作る
@@ -137,7 +138,7 @@ func (bot *Persona) daylife(ctx context.Context, db *DB, sleep time.Duration, ac
 			log.Printf("info: %s がトゥートできませんでした。今回は諦めます……\n", bot.Name)
 		}
 		sleep = until(bot.WakeHour, bot.WakeMin)
-		bot.daylife(ctx, db, sleep, bot.Awake)
+		go bot.daylife(ctx, db, sleep, bot.Awake)
 	case <-ctx.Done():
 	}
 
