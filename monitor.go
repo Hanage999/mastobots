@@ -4,9 +4,7 @@ import (
 	"context"
 	"log"
 	"math/rand"
-	"os"
 	"regexp"
-	"runtime/pprof"
 	"strings"
 	"time"
 
@@ -40,7 +38,7 @@ func (bot *Persona) monitor(ctx context.Context) {
 			}()
 		case *mastodon.ErrorEvent:
 			if ctx.Err() != nil {
-				log.Printf("info: %s が今日のタイムライン監視を終了しました。ctx.Err() = %s", bot.Name, ctx.Err())
+				log.Printf("info: %s が今日のタイムライン監視を終了しました：%s", bot.Name, ctx.Err())
 				return
 			}
 
@@ -116,8 +114,6 @@ func (bot *Persona) respondToNotification(ctx context.Context, ev *mastodon.Noti
 	case "reblog":
 		// TODO
 	case "favourite":
-		pprof.Lookup("goroutine").WriteTo(os.Stdout, 1)
-		// log.Printf("info: Goroutines: %d", runtime.NumGoroutine())
 		// TODO
 	case "follow":
 		// TODO

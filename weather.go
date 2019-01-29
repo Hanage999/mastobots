@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"math/rand"
 	"net/http"
 	"regexp"
 	"strings"
@@ -98,10 +97,10 @@ func getLocationCodes() (results map[string]interface{}, err error) {
 // GetRandomWeather は、livedoor天気予報でランダムな地域の天気を取得する。
 // when: 0は今日、1は明日、2は明後日
 func GetRandomWeather(when int) (data WeatherData, err error) {
-	_, code, err := RandomMap(locationCodes)
-	if err != nil {
-		log.Printf("info: %s\n", err)
-		return
+	// mapのrangeは順番がランダム化されるらしいので
+	var code interface{}
+	for _, code = range locationCodes {
+		break
 	}
 
 	codeStr, _ := code.(string)
@@ -187,30 +186,6 @@ func forecastMessage(data WeatherData, assertion string) (msg string) {
 
 	msg = data.Forecasts[0].DateLabel + "の" + data.Location.Prefecture + data.Location.City + "は " + data.Forecasts[0].Telop + cm + maxT + sep + minT + spc + "みたい" + assertion + "ね"
 
-	return
-}
-
-// RandomMap は、ランダムにmapを選び、そのキーと値を返す。
-func RandomMap(m map[string]interface{}) (loc string, code interface{}, err error) {
-	l := len(m)
-	if l == 0 {
-		err = fmt.Errorf("mapに要素がありません")
-		return
-	}
-
-	i := 0
-
-	index := rand.Intn(l)
-
-	for k, v := range m {
-		if index == i {
-			loc = k
-			code = v
-			break
-		} else {
-			i++
-		}
-	}
 	return
 }
 
