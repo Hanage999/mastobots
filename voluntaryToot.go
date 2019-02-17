@@ -2,6 +2,7 @@ package mastobots
 
 import (
 	"context"
+	"errors"
 	"log"
 	"math/rand"
 	"regexp"
@@ -63,7 +64,7 @@ func (bot *Persona) createNewsToot(db *DB) (toot mastodon.Toot, item Item, err e
 	// 投稿トゥート作成
 	msg, err := bot.messageFromItem(item)
 	if err != nil {
-		log.Printf("info: %s がアイテムid %d から投稿文の作成に失敗しました。\n", bot.Name, item.ID)
+		log.Printf("info: %s がアイテムid %d から投稿文の作成に失敗しました：%s", bot.Name, item.ID, err)
 		return
 	}
 
@@ -108,6 +109,10 @@ func (bot *Persona) messageFromItem(item Item) (msg string, err error) {
 			cd.priority = rand.Intn(2000)
 		}
 		candidates = append(candidates, cd)
+	}
+	if len(candidates) < 1 {
+		err = errors.New("キーワード候補が見つかりませんでした")
+		return
 	}
 	best := bestCandidate(candidates)
 
