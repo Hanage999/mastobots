@@ -110,11 +110,10 @@ func (bot *Persona) messageFromItem(item Item) (msg string, err error) {
 		}
 		candidates = append(candidates, cd)
 	}
-	if len(candidates) < 1 {
-		err = errors.New("キーワード候補が見つかりませんでした")
+	best, err := bestCandidate(candidates)
+	if err != nil {
 		return
 	}
-	best := bestCandidate(candidates)
 
 	// ハッシュタグ生成
 	var hashtagStr string
@@ -146,7 +145,12 @@ type candidate struct {
 }
 
 // bestCandidateは、candidateのスライスのうち優先度が最も高いものを返す。
-func bestCandidate(items []candidate) (max candidate) {
+func bestCandidate(items []candidate) (max candidate, err error) {
+	if len(items) < 1 {
+		err = errors.New("キーワード候補が見つかりませんでした")
+		return
+	}
+
 	max = items[0]
 
 	if len(items) == 1 {
