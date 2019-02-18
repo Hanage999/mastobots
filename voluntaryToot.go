@@ -101,17 +101,18 @@ func (bot *Persona) messageFromItem(item Item) (msg string, err error) {
 	// トゥートに使う単語の選定
 	candidates := make([]candidate, 0)
 	for _, node := range result.Nodes {
-		if node[5] != "普通名詞" && node[5] != "組織名" && node[5] != "人名" && node[5] != "地名" {
+		if node[3] != "名詞" {
 			continue
 		}
-		cd := candidate{node[0], string(getRuneAt(node[1], 0)), 700 + rand.Intn(2000)}
-		if node[5] == "普通名詞" {
-			cd.priority = rand.Intn(2000)
+		cd := candidate{node[0], string(getRuneAt(node[1], 0)), rand.Intn(2000)}
+		if node[5] == "組織名" || node[5] == "人名" || node[5] == "地名" {
+			cd.priority = 700 + rand.Intn(2000)
 		}
 		candidates = append(candidates, cd)
 	}
 	best, err := bestCandidate(candidates)
 	if err != nil {
+		log.Printf("info: 単語選定に失敗した本文：%s", txt)
 		return
 	}
 
