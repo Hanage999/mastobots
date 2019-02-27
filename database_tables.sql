@@ -20,8 +20,8 @@ CREATE TABLE `candidates` (
 
 CREATE TABLE `items` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-  `title` varchar(250) NOT NULL DEFAULT '',
-  `url` varchar(191) NOT NULL,
+  `title` varchar(255) NOT NULL DEFAULT '',
+  `url` varchar(255) NOT NULL,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
   `content` text NOT NULL,
