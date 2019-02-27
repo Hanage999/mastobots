@@ -22,6 +22,7 @@ type Item struct {
 	URL     string
 	Content string
 	Summary string
+	Keyword string
 }
 
 // newDBは、新たなデータベース接続を作成する。
@@ -152,6 +153,7 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 
 		for _, w := range bot.Keywords {
 			if result.contain(w) {
+				item.Keyword = w
 				myItems = append(myItems, item)
 				log.Printf("trace: 収集されたitem_id: %d、 サマリー：%s", item.ID, sumStr)
 				break
@@ -165,13 +167,13 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 		params := make([]interface{}, 0)
 		now := time.Now()
 		for _, item := range myItems {
-			vsts = append(vsts, "(?, ?, ?, ?)")
-			params = append(params, bot.DBID, item.ID, now, now)
+			vsts = append(vsts, "(?, ?, ?, ?, ?)")
+			params = append(params, bot.DBID, item.ID, now, now, item.Keyword)
 		}
 		vst := strings.Join(vsts, ", ")
 		_, err = db.Exec(`
 			INSERT IGNORE INTO
-				candidates (bot_id, item_id, created_at, updated_at)
+				candidates (bot_id, item_id, created_at, updated_at, keyword)
 			VALUES `+vst,
 			params...,
 		)
