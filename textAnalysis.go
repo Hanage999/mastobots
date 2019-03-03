@@ -48,7 +48,7 @@ func (result proseResult) length() int {
 func (result jumanResult) candidates() (cds []candidate) {
 	cds = make([]candidate, 0)
 	for _, node := range *result.Nodes {
-		if node[3] != "名詞" {
+		if node[3] != "名詞" && node[5] != "アルファベット" {
 			continue
 		}
 		cd := candidate{node[0], string(getRuneAt(node[1], 0)), rand.Intn(2000)}
@@ -116,7 +116,7 @@ func parse(text string) (result parseResult, err error) {
 
 // parseEnglish は、英語のテキストをproseで形態素解析して結果を返す。
 func parseEnglish(text string) (result proseResult, err error) {
-	doc, err := prose.NewDocument(text)
+	doc, err := prose.NewDocument(text, prose.WithExtraction(false))
 	if err != nil {
 		log.Printf("info: 形態素解析器が正常に起動できませんでした。：%s\n", err)
 		return
