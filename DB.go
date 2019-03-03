@@ -147,7 +147,7 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 			continue
 		}
 
-		if len(result.Nodes) == 0 {
+		if result.length() == 0 {
 			continue
 		}
 
