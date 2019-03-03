@@ -2,7 +2,6 @@ package mastobots
 
 import (
 	"context"
-	"errors"
 	"log"
 	"math/rand"
 	"regexp"
@@ -125,34 +124,5 @@ func (bot *Persona) messageFromItem(item Item) (msg string, err error) {
 	// リンクとハッシュタグを追加
 	msg += "\n\n【" + item.Title + "】 " + item.URL + "\n\n" + hashtagStr
 	log.Printf("trace: %s のトゥート内容：\n\n%s", bot.Name, msg)
-	return
-}
-
-// candidateはbotがあげつらう単語の候補。
-type candidate struct {
-	surface   string
-	firstKana string
-	priority  int
-}
-
-// bestCandidateは、candidateのスライスのうち優先度が最も高いものを返す。
-func bestCandidate(items []candidate) (max candidate, err error) {
-	if len(items) < 1 {
-		err = errors.New("キーワード候補が見つかりませんでした")
-		return
-	}
-
-	max = items[0]
-
-	if len(items) == 1 {
-		return
-	}
-
-	for i := 1; i < len(items); i++ {
-		if items[i].priority > max.priority {
-			max = items[i]
-		}
-	}
-
 	return
 }

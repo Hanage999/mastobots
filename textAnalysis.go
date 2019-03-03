@@ -13,21 +13,35 @@ import (
 	"gopkg.in/jdkato/prose.v2"
 )
 
-// parseResultはテキストの形態素解析結果を格納する。
+// parseResultはテキストの形態素解析結果のインターフェースを提供する。
 type parseResult interface {
-	contain(str string) bool
 	length() int
 	candidates() []candidate
+	contain(str string) bool
 }
 
+// candidateはbotがあげつらう単語の候補。
+type candidate struct {
+	surface   string
+	firstKana string
+	priority  int
+}
+
+// jumanResult は、テキストをjumanppで形態素解析した結果を格納する
 type jumanResult struct {
 	Nodes *[][]string
 }
+
+// proseResult は、テキストをproseで形態素解析した結果を格納する
 type proseResult struct {
 	Nodes *[]prose.Token
 }
 
 func (result jumanResult) length() int {
+	return len(*result.Nodes)
+}
+
+func (result proseResult) length() int {
 	return len(*result.Nodes)
 }
 
@@ -46,10 +60,6 @@ func (result jumanResult) candidates() (cds []candidate) {
 	return
 }
 
-func (result proseResult) length() int {
-	return len(*result.Nodes)
-}
-
 func (result proseResult) candidates() (cds []candidate) {
 	cds = make([]candidate, 0)
 	for _, node := range *result.Nodes {
@@ -65,39 +75,28 @@ func (result proseResult) candidates() (cds []candidate) {
 	return
 }
 
-// textContentは、htmlからテキストを抽出する。
-// https://github.com/mattn/go-mastodon/blob/master/cmd/mstdn/main.go より拝借
-func textContent(s string) string {
-	doc, err := html.Parse(strings.NewReader(s))
-	if err != nil {
-		return s
-	}
-	var buf bytes.Buffer
-
-	var extractText func(node *html.Node, w *bytes.Buffer)
-	extractText = func(node *html.Node, w *bytes.Buffer) {
-		if node.Type == html.TextNode {
-			data := strings.Trim(node.Data, "\r\n")
-			if data != "" {
-				w.WriteString(data)
-			}
-		}
-		for c := node.FirstChild; c != nil; c = c.NextSibling {
-			extractText(c, w)
-		}
-		if node.Type == html.ElementNode {
-			name := strings.ToLower(node.Data)
-			if name == "br" {
-				w.WriteString("\n")
-			}
+func (result jumanResult) contain(str string) bool {
+	for _, node := range *result.Nodes {
+		// 3番目の要素が基本形
+		if node[2] == str {
+			log.Printf("trace: 一致した単語：%s", str)
+			return true
 		}
 	}
-	extractText(doc, &buf)
-
-	return buf.String()
+	return false
 }
 
-// parseは、Juman++で文字列を形態素解析して結果を返す。
+func (result proseResult) contain(str string) bool {
+	for _, node := range *result.Nodes {
+		if node.Text == str {
+			log.Printf("trace: 一致した単語：%s", str)
+			return true
+		}
+	}
+	return false
+}
+
+// parseは、テキストを形態素解析した結果を返す。
 func parse(text string) (result parseResult, err error) {
 	if text == "" {
 		err = errors.New("解析する文字列が空です")
@@ -115,6 +114,21 @@ func parse(text string) (result parseResult, err error) {
 	return
 }
 
+// parseEnglish は、英語のテキストをproseで形態素解析して結果を返す。
+func parseEnglish(text string) (result proseResult, err error) {
+	doc, err := prose.NewDocument(text)
+	if err != nil {
+		log.Printf("info: 形態素解析器が正常に起動できませんでした。：%s\n", err)
+		return
+	}
+
+	tks := doc.Tokens()
+	result = proseResult{&tks}
+
+	return
+}
+
+// parseJapanese は、日本語のテキストをJuman++で形態素解析して結果を返す。
 func parseJapanese(text string) (result jumanResult, err error) {
 	// 改行のない長文はJumanppに食わせるとエラーになるので、句点で強制改行
 	safeStr := strings.Replace(text, "。\n", "。", -1)
@@ -154,45 +168,10 @@ func parseJapanese(text string) (result jumanResult, err error) {
 	result = jumanResult{&nodes}
 
 	if strange {
-		log.Printf("解析異常が出たテキスト：%s", safeStr)
+		log.Printf("info: 解析異常が出たテキスト：%s", safeStr)
 	}
 
 	return
-}
-
-func parseEnglish(text string) (result proseResult, err error) {
-	doc, err := prose.NewDocument(text)
-	if err != nil {
-		log.Printf("info: 形態素解析器が正常に起動できませんでした。：%s\n", err)
-		return
-	}
-
-	tks := doc.Tokens()
-	result = proseResult{&tks}
-
-	return
-}
-
-// containは、形態素解析結果（基本形）に特定の単語が存在するかを調べる。
-func (result jumanResult) contain(str string) bool {
-	for _, node := range *result.Nodes {
-		// 3番目の要素が基本形
-		if node[2] == str {
-			log.Printf("trace: 一致した単語：%s", str)
-			return true
-		}
-	}
-	return false
-}
-
-func (result proseResult) contain(str string) bool {
-	for _, node := range *result.Nodes {
-		if node.Text == str {
-			log.Printf("trace: 一致した単語：%s", str)
-			return true
-		}
-	}
-	return false
 }
 
 // getRuneAtは、文字列の中のn番目の文字を返す。
@@ -203,4 +182,58 @@ func getRuneAt(s string, i int) rune {
 		i = len(rs) - 1
 	}
 	return rs[i]
+}
+
+// textContentは、htmlからテキストを抽出する。
+// https://github.com/mattn/go-mastodon/blob/master/cmd/mstdn/main.go より拝借
+func textContent(s string) string {
+	doc, err := html.Parse(strings.NewReader(s))
+	if err != nil {
+		return s
+	}
+	var buf bytes.Buffer
+
+	var extractText func(node *html.Node, w *bytes.Buffer)
+	extractText = func(node *html.Node, w *bytes.Buffer) {
+		if node.Type == html.TextNode {
+			data := strings.Trim(node.Data, "\r\n")
+			if data != "" {
+				w.WriteString(data)
+			}
+		}
+		for c := node.FirstChild; c != nil; c = c.NextSibling {
+			extractText(c, w)
+		}
+		if node.Type == html.ElementNode {
+			name := strings.ToLower(node.Data)
+			if name == "br" {
+				w.WriteString("\n")
+			}
+		}
+	}
+	extractText(doc, &buf)
+
+	return buf.String()
+}
+
+// bestCandidateは、candidateのスライスのうち優先度が最も高いものを返す。
+func bestCandidate(items []candidate) (max candidate, err error) {
+	if len(items) < 1 {
+		err = errors.New("キーワード候補が見つかりませんでした")
+		return
+	}
+
+	max = items[0]
+
+	if len(items) == 1 {
+		return
+	}
+
+	for i := 1; i < len(items); i++ {
+		if items[i].priority > max.priority {
+			max = items[i]
+		}
+	}
+
+	return
 }
