@@ -190,15 +190,15 @@ func forecastMessage(data WeatherData, assertion string) (msg string) {
 }
 
 // judgeWeatherRequest は、天気の要望の内容を判断する
-func (result parseResult) judgeWeatherRequest() (lc string, dt int, err error) {
+func (result jumanResult) judgeWeatherRequest() (lc string, dt int, err error) {
 	lc = result.getWeatherQueryLocation()
 	dt = result.getWeatherQueryDate()
 	return
 }
 
 // getWeatherQueryLocation は、天気情報の要望トゥートの形態素解析結果に地名が存在すればそれを返す。
-func (result parseResult) getWeatherQueryLocation() (loc string) {
-	for _, node := range result.Nodes {
+func (result jumanResult) getWeatherQueryLocation() (loc string) {
+	for _, node := range *result.Nodes {
 		// 5番目の要素は品詞詳細、11番目の要素は諸情報
 		if node[5] == "地名" || node[5] == "人名" || strings.Contains(node[11], "地名") || strings.Contains(node[11], "場所") {
 			loc = node[0]
@@ -209,8 +209,8 @@ func (result parseResult) getWeatherQueryLocation() (loc string) {
 }
 
 // getWeatherQueryDate は、天気情報の要望トゥートの形態素解析結果に日の指定があればそれを返す。
-func (result parseResult) getWeatherQueryDate() (date int) {
-	for _, node := range result.Nodes {
+func (result jumanResult) getWeatherQueryDate() (date int) {
+	for _, node := range *result.Nodes {
 		switch node[1] {
 		case "あす", "あした", "みょうにち":
 			date = 1
@@ -224,9 +224,9 @@ func (result parseResult) getWeatherQueryDate() (date int) {
 }
 
 // isWeatherRelated は、文字列が天気関係の話かどうかを調べる。
-func (result parseResult) isWeatherRelated() bool {
+func (result jumanResult) isWeatherRelated() bool {
 	kws := [...]string{"天気", "気温", "暖", "暑", "雨", "晴", "曇", "雪", "風", "嵐", "雹", "湿", "乾", "冷える", "蒸す", "熱帯夜"}
-	for _, node := range result.Nodes {
+	for _, node := range *result.Nodes {
 		for _, w := range kws {
 			if strings.Contains(node[11], w) {
 				return true

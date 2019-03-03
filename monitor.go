@@ -2,6 +2,7 @@ package mastobots
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"math/rand"
 	"regexp"
@@ -108,7 +109,7 @@ func (bot *Persona) respondToNotification(ctx context.Context, ev *mastodon.Noti
 	switch ev.Notification.Type {
 	case "mention":
 		if err = bot.respondToMention(ctx, ev.Notification.Account, ev.Notification.Status); err != nil {
-			log.Printf("info: %s がメンションに反応できませんでした。\n", bot.Name)
+			log.Printf("info: %s がメンションに反応できませんでした：%s", bot.Name, err)
 			return
 		}
 	case "reblog":
@@ -129,8 +130,15 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 		name = name + " "
 	}
 	txt := textContent(status.Content)
-	jm, err := parse(txt)
+	res, err := parse(txt)
 	if err != nil {
+		return
+	}
+
+	var jm jumanResult
+	var ok bool
+	if jm, ok = res.(jumanResult); !ok {
+		err = fmt.Errorf("%sに送られたメッセージは日本語ではありません", bot.Name)
 		return
 	}
 

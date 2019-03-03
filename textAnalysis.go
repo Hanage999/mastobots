@@ -4,15 +4,65 @@ import (
 	"bytes"
 	"errors"
 	"log"
+	"math/rand"
 	"os/exec"
 	"strings"
 
+	"github.com/abadojack/whatlanggo"
 	"golang.org/x/net/html"
+	"gopkg.in/jdkato/prose.v2"
 )
 
 // parseResultはテキストの形態素解析結果を格納する。
-type parseResult struct {
-	Nodes [][]string
+type parseResult interface {
+	contain(str string) bool
+	length() int
+	candidates() []candidate
+}
+
+type jumanResult struct {
+	Nodes *[][]string
+}
+type proseResult struct {
+	Nodes *[]prose.Token
+}
+
+func (result jumanResult) length() int {
+	return len(*result.Nodes)
+}
+
+func (result jumanResult) candidates() (cds []candidate) {
+	cds = make([]candidate, 0)
+	for _, node := range *result.Nodes {
+		if node[3] != "名詞" {
+			continue
+		}
+		cd := candidate{node[0], string(getRuneAt(node[1], 0)), rand.Intn(2000)}
+		if node[5] == "組織名" || node[5] == "人名" || node[5] == "地名" {
+			cd.priority = 700 + rand.Intn(2000)
+		}
+		cds = append(cds, cd)
+	}
+	return
+}
+
+func (result proseResult) length() int {
+	return len(*result.Nodes)
+}
+
+func (result proseResult) candidates() (cds []candidate) {
+	cds = make([]candidate, 0)
+	for _, node := range *result.Nodes {
+		if !strings.Contains(node.Tag, "NN") {
+			continue
+		}
+		cd := candidate{node.Text, string(getRuneAt(node.Text, 0)), rand.Intn(2000)}
+		if strings.Contains(node.Tag, "NNP") {
+			cd.priority = 700 + rand.Intn(2000)
+		}
+		cds = append(cds, cd)
+	}
+	return
 }
 
 // textContentは、htmlからテキストを抽出する。
@@ -55,6 +105,17 @@ func parse(text string) (result parseResult, err error) {
 		return
 	}
 
+	info := whatlanggo.Detect(text)
+	if whatlanggo.LangToString(info.Lang) == "eng" {
+		result, err = parseEnglish(text)
+	} else {
+		result, err = parseJapanese(text)
+	}
+
+	return
+}
+
+func parseJapanese(text string) (result jumanResult, err error) {
 	// 改行のない長文はJumanppに食わせるとエラーになるので、句点で強制改行
 	safeStr := strings.Replace(text, "。\n", "。", -1)
 	safeStr = strings.Replace(safeStr, "。", "。\n", -1)
@@ -90,20 +151,43 @@ func parse(text string) (result parseResult, err error) {
 		}
 		nodes = append(nodes, node)
 	}
-	result = parseResult{nodes}
+	result = jumanResult{&nodes}
 
 	if strange {
-		log.Printf("trace: 解析異常が出たテキスト：%s", safeStr)
+		log.Printf("解析異常が出たテキスト：%s", safeStr)
 	}
 
 	return
 }
 
+func parseEnglish(text string) (result proseResult, err error) {
+	doc, err := prose.NewDocument(text)
+	if err != nil {
+		log.Printf("info: 形態素解析器が正常に起動できませんでした。：%s\n", err)
+		return
+	}
+
+	tks := doc.Tokens()
+	result = proseResult{&tks}
+
+	return
+}
+
 // containは、形態素解析結果（基本形）に特定の単語が存在するかを調べる。
-func (result parseResult) contain(str string) bool {
-	for _, node := range result.Nodes {
+func (result jumanResult) contain(str string) bool {
+	for _, node := range *result.Nodes {
 		// 3番目の要素が基本形
 		if node[2] == str {
+			log.Printf("trace: 一致した単語：%s", str)
+			return true
+		}
+	}
+	return false
+}
+
+func (result proseResult) contain(str string) bool {
+	for _, node := range *result.Nodes {
+		if node.Text == str {
 			log.Printf("trace: 一致した単語：%s", str)
 			return true
 		}
