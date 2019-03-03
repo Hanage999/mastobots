@@ -145,7 +145,7 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 	msg := ""
 
 	switch {
-	case strings.Contains(txt, "フォロー頼む"+bot.Assertion):
+	case strings.Contains(txt, "フォロー"):
 		rel, err := bot.relationWith(ctx, account.ID)
 		if err != nil {
 			log.Printf("info: %s が関係取得に失敗しました。\n", bot.Name)
