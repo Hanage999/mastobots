@@ -34,7 +34,8 @@ type jumanResult struct {
 
 // proseResult は、テキストをproseで形態素解析した結果を格納する
 type proseResult struct {
-	Nodes *[]prose.Token
+	Nodes    *[]prose.Token
+	Entities *[]prose.Entity
 }
 
 func (result jumanResult) length() int {
@@ -48,7 +49,7 @@ func (result proseResult) length() int {
 func (result jumanResult) candidates() (cds []candidate) {
 	cds = make([]candidate, 0)
 	for _, node := range *result.Nodes {
-		if node[3] != "名詞" && node[5] != "アルファベット" {
+		if node[3] != "名詞" || node[5] == "数詞" {
 			continue
 		}
 		cd := candidate{node[0], string(getRuneAt(node[1], 0)), rand.Intn(2000)}
@@ -62,16 +63,25 @@ func (result jumanResult) candidates() (cds []candidate) {
 
 func (result proseResult) candidates() (cds []candidate) {
 	cds = make([]candidate, 0)
+
 	for _, node := range *result.Nodes {
-		if !strings.Contains(node.Tag, "NN") {
+		if !strings.Contains(node.Tag, "NN") && node.Text != "\"" && node.Text != "." {
 			continue
 		}
 		cd := candidate{node.Text, string(getRuneAt(node.Text, 0)), rand.Intn(2000)}
-		if strings.Contains(node.Tag, "NNP") {
-			cd.priority = 700 + rand.Intn(2000)
-		}
 		cds = append(cds, cd)
+		log.Printf("trace: %s, %s\n", node.Text, node.Tag)
 	}
+
+	for _, node := range *result.Entities {
+		if strings.Contains(node.Text, "\"") {
+			continue
+		}
+		cd := candidate{node.Text, string(getRuneAt(node.Text, 0)), 700 + rand.Intn(2000)}
+		cds = append(cds, cd)
+		log.Printf("trace: %s, %s\n", node.Text, node.Label)
+	}
+
 	return
 }
 
@@ -104,28 +114,35 @@ func parse(text string) (result parseResult, err error) {
 		return
 	}
 
-	info := whatlanggo.Detect(text)
-	if whatlanggo.LangToString(info.Lang) == "eng" {
-		result, err = parseEnglish(text)
-	} else {
-		result, err = parseJapanese(text)
+	{
+		info := whatlanggo.Detect(text)
+		if whatlanggo.LangToString(info.Lang) == "eng" {
+			result, err = parseEnglish(text)
+		} else {
+			result, err = parseJapanese(text)
+		}
 	}
 
 	return
 }
 
 // parseEnglish は、英語のテキストをproseで形態素解析して結果を返す。
-func parseEnglish(text string) (result proseResult, err error) {
-	doc, err := prose.NewDocument(text, prose.WithExtraction(false))
-	if err != nil {
-		log.Printf("info: 形態素解析器が正常に起動できませんでした。：%s\n", err)
-		return
+func parseEnglish(text string) (proseResult, error) {
+	var tks []prose.Token
+	var etts []prose.Entity
+
+	{
+		doc, err := prose.NewDocument(text, prose.WithSegmentation(false), prose.WithTokenization(false))
+		if err != nil {
+			log.Printf("info: 形態素解析器が正常に起動できませんでした。：%s\n", err)
+			return proseResult{&tks, &etts}, err
+		}
+
+		tks = doc.Tokens()
+		etts = doc.Entities()
 	}
 
-	tks := doc.Tokens()
-	result = proseResult{&tks}
-
-	return
+	return proseResult{&tks, &etts}, nil
 }
 
 // parseJapanese は、日本語のテキストをJuman++で形態素解析して結果を返す。
