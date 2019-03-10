@@ -65,7 +65,7 @@ func (result proseResult) candidates() (cds []candidate) {
 	cds = make([]candidate, 0)
 
 	for _, node := range *result.Nodes {
-		if !strings.Contains(node.Tag, "NN") && node.Text != "\"" && node.Text != "." {
+		if !strings.Contains(node.Tag, "NN") || node.Text == "\"" || node.Text == "." {
 			continue
 		}
 		cd := candidate{node.Text, string(getRuneAt(node.Text, 0)), rand.Intn(2000)}
