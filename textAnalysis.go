@@ -134,7 +134,7 @@ func parseEnglish(text string) (proseResult, error) {
 	{
 		doc, err := prose.NewDocument(text, prose.WithSegmentation(false), prose.WithTokenization(false))
 		if err != nil {
-			log.Printf("info: 形態素解析器が正常に起動できませんでした。：%s\n", err)
+			log.Printf("info: 形態素解析器が正常に起動できませんでした：%s", err)
 			return proseResult{&tks, &etts}, err
 		}
 
@@ -157,7 +157,7 @@ func parseJapanese(text string) (result jumanResult, err error) {
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	if err = cmd.Run(); err != nil {
-		log.Printf("info: 形態素解析器が正常に起動できませんでした。：%s\n", err)
+		log.Printf("info: 形態素解析器が正常に起動できませんでした：%s", err)
 		return
 	}
 
@@ -174,7 +174,7 @@ func parseJapanese(text string) (result jumanResult, err error) {
 			strange = true
 			log.Println("info: 異常なjumanpp解析結果：", node)
 			if node[0] == "#" {
-				err = errors.New("jumanppでエラーが発生しました。")
+				err = errors.New("jumanppでエラーが発生しました")
 				log.Printf("info: %s", err)
 				break
 			}

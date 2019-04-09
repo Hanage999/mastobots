@@ -108,7 +108,7 @@ func GetRandomWeather(when int) (data WeatherData, err error) {
 
 	res, err := http.Get(url)
 	if err != nil {
-		log.Printf("天気予報サイトへのリクエストに失敗しました", err)
+		log.Printf("天気予報サイトへのリクエストに失敗しました：%s", err)
 		return
 	}
 
