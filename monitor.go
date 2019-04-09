@@ -14,12 +14,12 @@ import (
 
 // moitorは、websocketでタイムラインを監視して反応する。
 func (bot *Persona) monitor(ctx context.Context) {
-	log.Printf("info: %s がタイムライン監視を開始しました。", bot.Name)
+	log.Printf("info: %s がタイムライン監視を開始しました", bot.Name)
 	newCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	evch, err := bot.openStreaming(newCtx)
 	if err != nil {
-		log.Printf("info: %s がストリーミングを受信開始できませんでした。\n", bot.Name)
+		log.Printf("info: %s がストリーミングを受信開始できませんでした", bot.Name)
 		return
 	}
 
@@ -28,13 +28,13 @@ func (bot *Persona) monitor(ctx context.Context) {
 		case *mastodon.UpdateEvent:
 			go func() {
 				if err := bot.respondToUpdate(newCtx, t); err != nil {
-					log.Printf("info: %s がトゥートに反応できませんでした。\n", bot.Name)
+					log.Printf("info: %s がトゥートに反応できませんでした", bot.Name)
 				}
 			}()
 		case *mastodon.NotificationEvent:
 			go func() {
 				if err := bot.respondToNotification(newCtx, t); err != nil {
-					log.Printf("info: %s が通知に反応できませんでした。\n", bot.Name)
+					log.Printf("info: %s が通知に反応できませんでした", bot.Name)
 				}
 			}()
 		case *mastodon.ErrorEvent:
@@ -44,7 +44,7 @@ func (bot *Persona) monitor(ctx context.Context) {
 			}
 
 			itvl := rand.Intn(4000) + 1000
-			log.Printf("info: %s の接続が切れました。%dミリ秒後に再接続します：%s\n", bot.Name, itvl, t.Error())
+			log.Printf("info: %s の接続が切れました。%dミリ秒後に再接続します：%s", bot.Name, itvl, t.Error())
 			time.Sleep(time.Duration(itvl) * time.Millisecond)
 			go bot.monitor(ctx)
 			return
@@ -59,13 +59,13 @@ func (bot *Persona) openStreaming(ctx context.Context) (evch chan mastodon.Event
 		evch, err = wsc.StreamingWSUser(ctx)
 		if err != nil {
 			time.Sleep(retryInterval)
-			log.Printf("info: %s のストリーミング受信開始をリトライします：%s\n", bot.Name, err)
+			log.Printf("info: %s のストリーミング受信開始をリトライします：%s", bot.Name, err)
 			continue
 		}
-		log.Printf("trace: %s のストリーミング受信に成功しました。\n", bot.Name)
+		log.Printf("trace: %s のストリーミング受信に成功しました", bot.Name)
 		return
 	}
-	log.Printf("info: %s のストリーミング受信開始に失敗しました。：%s\n", bot.Name, err)
+	log.Printf("info: %s のストリーミング受信開始に失敗しました：%s", bot.Name, err)
 	return
 }
 
@@ -95,7 +95,7 @@ func (bot *Persona) respondToUpdate(ctx context.Context, ev *mastodon.UpdateEven
 	for _, w := range bot.Keywords {
 		if result.contain(w) {
 			if err = bot.fav(ctx, ev.Status.ID); err != nil {
-				log.Printf("info: %s がふぁぼを諦めました。\n", bot.Name)
+				log.Printf("info: %s がふぁぼを諦めました", bot.Name)
 				return
 			}
 			break
@@ -148,14 +148,14 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 	case strings.Contains(txt, "フォロー"):
 		rel, err := bot.relationWith(ctx, account.ID)
 		if err != nil {
-			log.Printf("info: %s が関係取得に失敗しました。\n", bot.Name)
+			log.Printf("info: %s が関係取得に失敗しました", bot.Name)
 			return err
 		}
 		if (*rel[0]).Following == true {
 			msg = "@" + account.Acct + " " + name + "さんはもうフォローしてるから大丈夫" + bot.Assertion + "よー"
 		} else {
 			if err = bot.follow(ctx, account.ID); err != nil {
-				log.Printf("info: %s がフォローに失敗しました。\n", bot.Name)
+				log.Printf("info: %s がフォローに失敗しました", bot.Name)
 				return err
 			}
 			msg = "@" + account.Acct + " わーい、お友達" + bot.Assertion + "ね！これからは、" + name + "さんのトゥートを生温かく見守っていく" + bot.Assertion + "よー"
@@ -173,7 +173,7 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 		}
 		data, err := GetRandomWeather(dt)
 		if err != nil {
-			log.Printf("info: %s が天気の取得に失敗しました。", bot.Name)
+			log.Printf("info: %s が天気の取得に失敗しました", bot.Name)
 			return err
 		}
 		ignoreStr := ""
@@ -186,7 +186,7 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 	if msg != "" {
 		toot := mastodon.Toot{Status: msg, Visibility: status.Visibility, InReplyToID: status.ID}
 		if err = bot.post(ctx, toot); err != nil {
-			log.Printf("info: %s がリプライに失敗しました。\n", bot.Name)
+			log.Printf("info: %s がリプライに失敗しました", bot.Name)
 			return err
 		}
 	}

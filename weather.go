@@ -55,20 +55,20 @@ func getLocationCodes() (results map[string]interface{}, err error) {
 
 	res, err := http.Get(url)
 	if err != nil {
-		log.Printf("%s へのリクエストに失敗しました。：%s\n", url, err)
+		log.Printf("%s へのリクエストに失敗しました：%s", url, err)
 		return
 	}
 	defer res.Body.Close()
 
 	if code := res.StatusCode; code >= 400 {
-		err = fmt.Errorf("%s への接続エラーです(%d)。", url, code)
+		err = fmt.Errorf("%s への接続エラーです(%d)", url, code)
 		log.Printf("info: %s\n", err)
 		return
 	}
 
 	doc, err := html.Parse(res.Body)
 	if err != nil {
-		log.Printf("%s のパースに失敗しました。：%s", url, err)
+		log.Printf("%s のパースに失敗しました：%s", url, err)
 		return
 	}
 
@@ -108,13 +108,13 @@ func GetRandomWeather(when int) (data WeatherData, err error) {
 
 	res, err := http.Get(url)
 	if err != nil {
-		log.Printf("天気予報サイトへのリクエストに失敗しました。%s\n", err)
+		log.Printf("天気予報サイトへのリクエストに失敗しました", err)
 		return
 	}
 
 	if code := res.StatusCode; code >= 400 {
-		err = fmt.Errorf("天気予報サイトへの接続エラーです(%d)。", code)
-		log.Printf("info: %s\n", err)
+		err = fmt.Errorf("天気予報サイトへの接続エラーです(%d)", code)
+		log.Printf("info: %s", err)
 		return
 	}
 	defer res.Body.Close()
@@ -122,7 +122,7 @@ func GetRandomWeather(when int) (data WeatherData, err error) {
 	var response WeatherData
 
 	if err = json.NewDecoder(res.Body).Decode(&response); err != nil {
-		log.Printf("info: 予報データがデコードできませんでした。：%s", err)
+		log.Printf("info: 予報データがデコードできませんでした：%s", err)
 		return
 	}
 
@@ -140,7 +140,7 @@ func GetRandomWeather(when int) (data WeatherData, err error) {
 // EmojifyWeather は、天気を絵文字で表現する。
 func emojifyWeather(telop string) (emojiStr string, err error) {
 	if telop == "" {
-		err = fmt.Errorf("info: 天気テキストが空です。")
+		err = fmt.Errorf("info: 天気テキストが空です")
 		return
 	}
 

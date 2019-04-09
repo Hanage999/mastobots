@@ -33,13 +33,13 @@ func newDB(cr map[string]string) (db *DB, err error) {
 		cr["database"]+
 		"?parseTime=true&loc=Asia%2FTokyo")
 	if err != nil {
-		log.Printf("alert: データベースがOpenできませんでした。：%s\n", err)
+		log.Printf("alert: データベースがOpenできませんでした：%s", err)
 		return db, err
 	}
 
 	// 接続確認
 	if err := dbase.Ping(); err != nil {
-		log.Printf("alert: データベースに接続できませんでした。：%s\n", err)
+		log.Printf("alert: データベースに接続できませんでした：%s", err)
 		return db, err
 	}
 
@@ -64,7 +64,7 @@ func (db *DB) addNewBots(bots []*Persona) (err error) {
 		params...,
 	)
 	if err != nil {
-		log.Printf("info: botテーブルが更新できませんでした。：%s\n", err)
+		log.Printf("info: botテーブルが更新できませんでした：%s", err)
 		return
 	}
 
@@ -74,7 +74,7 @@ func (db *DB) addNewBots(bots []*Persona) (err error) {
 		AUTO_INCREMENT = 1
 	`)
 	if err != nil {
-		log.Printf("info: itemsテーブルの自動採番値が調整できませんでした。：%s\n", err)
+		log.Printf("info: itemsテーブルの自動採番値が調整できませんでした：%s", err)
 		return
 	}
 

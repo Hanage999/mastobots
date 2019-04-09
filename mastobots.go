@@ -65,7 +65,7 @@ func Initialize() (bots []*Persona, db *DB, err error) {
 	conf.AddConfigPath(".")
 	conf.SetConfigType("yaml")
 	if err := conf.ReadInConfig(); err != nil {
-		log.Printf("alert: 設定ファイルが読み込めませんでした。\n")
+		log.Printf("alert: 設定ファイルが読み込めませんでした")
 		return nil, nil, err
 	}
 	appName = conf.GetString("MastoAppName")
@@ -75,7 +75,7 @@ func Initialize() (bots []*Persona, db *DB, err error) {
 	// マストドンアプリ設定ファイル読み込み
 	file, err := os.OpenFile("apps.yml", os.O_CREATE, 0666)
 	if err != nil {
-		log.Printf("alert: アプリ設定ファイルが作成できませんでした。\n")
+		log.Printf("alert: アプリ設定ファイルが作成できませんでした")
 		return nil, nil, err
 	}
 	file.Close()
@@ -84,7 +84,7 @@ func Initialize() (bots []*Persona, db *DB, err error) {
 	appConf.SetConfigName("apps")
 	appConf.SetConfigType("yaml")
 	if err := appConf.ReadInConfig(); err != nil {
-		log.Printf("alert: アプリ設定ファイルが読み込めませんでした。\n")
+		log.Printf("alert: アプリ設定ファイルが読み込めませんでした")
 		return nil, nil, err
 	}
 	appConf.UnmarshalKey("MastoApps", &apps)
@@ -94,7 +94,7 @@ func Initialize() (bots []*Persona, db *DB, err error) {
 	for _, bot := range bots {
 		updatedApps, err := initMastoApps(apps, appName, bot.Instance)
 		if err != nil {
-			log.Printf("alert: %s のためのアプリを登録できませんでした。\n", bot.Instance)
+			log.Printf("alert: %s のためのアプリを登録できませんでした", bot.Instance)
 			return nil, nil, err
 		}
 		if len(updatedApps) > 0 {
@@ -105,16 +105,16 @@ func Initialize() (bots []*Persona, db *DB, err error) {
 	if dirtyConfig {
 		appConf.Set("MastoApps", apps)
 		if err := appConf.WriteConfig(); err != nil {
-			log.Printf("alert: アプリ設定ファイルが書き込めませんでした。：%s", err)
+			log.Printf("alert: アプリ設定ファイルが書き込めませんでした：%s", err)
 			return nil, nil, err
 		}
-		log.Printf("info: 設定ファイルを更新しました。")
+		log.Printf("info: 設定ファイルを更新しました")
 	}
 
 	// botの初期化（複数設定可）
 	for _, bot := range bots {
 		if err := initPersona(apps, bot); err != nil {
-			log.Printf("alert: %s を初期化できませんでした。\n", bot.Name)
+			log.Printf("alert: %s を初期化できませんでした", bot.Name)
 			return nil, nil, err
 		}
 	}
@@ -122,13 +122,13 @@ func Initialize() (bots []*Persona, db *DB, err error) {
 	// データベースへの接続
 	db, err = newDB(cr)
 	if err != nil {
-		log.Printf("alert: データベースへの接続が確保できませんでした。\n")
+		log.Printf("alert: データベースへの接続が確保できませんでした")
 		return nil, nil, err
 	}
 
 	// botがまだデータベースに登録されていなかったら登録
 	if err = db.addNewBots(bots); err != nil {
-		log.Printf("alert: データベースにbotが登録できませんでした。\n")
+		log.Printf("alert: データベースにbotが登録できませんでした")
 		return nil, nil, err
 	}
 
@@ -136,7 +136,7 @@ func Initialize() (bots []*Persona, db *DB, err error) {
 	for _, bot := range bots {
 		id, err := db.botID(bot)
 		if err != nil {
-			log.Printf("alert: botのデータベース上のIDが取得できませんでした。\n")
+			log.Printf("alert: botのデータベース上のIDが取得できませんでした")
 			return nil, nil, err
 		}
 		bot.DBID = id
@@ -150,9 +150,9 @@ func ActivateBots(bots []*Persona, db *DB, p int) (err error) {
 	// 全てをシャットダウンするタイムアウトの設定
 	ctx := context.Background()
 	var cancel context.CancelFunc
-	msg := "mastobots、時間無制限でスタートです！\n"
+	msg := "mastobots、時間無制限でスタートです！"
 	if p > 0 {
-		msg = "mastobots、" + strconv.Itoa(p) + "分間動きます！\n"
+		msg = "mastobots、" + strconv.Itoa(p) + "分間動きます！"
 		dur := time.Duration(p) * time.Minute
 		ctx, cancel = context.WithTimeout(ctx, dur)
 		defer cancel()
@@ -165,6 +165,6 @@ func ActivateBots(bots []*Persona, db *DB, p int) (err error) {
 	}
 
 	<-ctx.Done()
-	log.Printf("info: %d分経ったのでシャットダウンします。\n", p)
+	log.Printf("info: %d分経ったのでシャットダウンします", p)
 	return
 }

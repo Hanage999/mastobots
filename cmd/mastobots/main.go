@@ -29,7 +29,7 @@ func run() (exitCode int) {
 	// もろもろ準備
 	bots, db, err := mastobots.Initialize()
 	if err != nil {
-		log.Printf("alert: 初期化に失敗しました。理由：%s\n", err)
+		log.Printf("alert: 初期化に失敗しました：%s", err)
 		exitCode = 1
 		return
 	}
@@ -37,7 +37,7 @@ func run() (exitCode int) {
 
 	// 活動開始
 	if err = mastobots.ActivateBots(bots, db, *p); err != nil {
-		log.Printf("alert: 停止しました。理由：%s\n", err)
+		log.Printf("alert: 停止しました：%s", err)
 		exitCode = 1
 		return
 	}

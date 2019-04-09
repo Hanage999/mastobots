@@ -26,7 +26,7 @@ func initMastoApps(apps []*MastoApp, appName, instance string) (updatedApps []*M
 
 	app, err := newMastoApp(appName, instance)
 	if err != nil {
-		log.Printf("alert: %s へのアプリケーション登録に失敗しました。\n", instance)
+		log.Printf("alert: %s へのアプリケーション登録に失敗しました", instance)
 		return
 	}
 	updatedApps = append(apps, &app)
@@ -43,7 +43,7 @@ func newMastoApp(name, instance string) (app MastoApp, err error) {
 		Website:    "https://github.com/hanage999/mastobots",
 	})
 	if err != nil {
-		log.Printf("alert: マストドンアプリケーションが新規登録できませんでした。%s\n", err)
+		log.Printf("alert: マストドンアプリケーションが新規登録できませんでした：%s", err)
 		return
 	}
 
@@ -63,7 +63,7 @@ func getApp(instance string, apps []*MastoApp) (app *MastoApp, err error) {
 		}
 	}
 
-	err = errors.New(instance + "のためのアプリが取得できませんでした。\n")
+	err = errors.New(instance + "のためのアプリが取得できませんでした")
 	log.Printf("alert: %s", err)
 	return
 }

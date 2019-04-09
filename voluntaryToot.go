@@ -13,7 +13,7 @@ import (
 
 // periodicTootは、指定された時刻（分）を皮切りに一定時間ごとにトゥートする。
 func (bot *Persona) periodicToot(ctx context.Context, db *DB) {
-	log.Printf("info: %s が今日の定期トゥートを開始しました。", bot.Name)
+	log.Printf("info: %s が今日の定期トゥートを開始しました", bot.Name)
 
 	tc := tickAfterWait(ctx, until(-1, bot.FirstFire), time.Duration(bot.Interval)*time.Minute)
 LOOP:
@@ -26,7 +26,7 @@ LOOP:
 					return
 				}
 				if err := db.stockItems(bot); err != nil {
-					log.Printf("info: %s がアイテムの収集に失敗しました。\n", bot.Name)
+					log.Printf("info: %s がアイテムの収集に失敗しました", bot.Name)
 					return
 				}
 				toot, item, err := bot.createNewsToot(db)
@@ -36,16 +36,16 @@ LOOP:
 				}
 				if item.Title != "" {
 					if err := bot.post(ctx, toot); err != nil {
-						log.Printf("info: %s がトゥートできませんでした。今回は諦めます……\n", bot.Name)
+						log.Printf("info: %s がトゥートできませんでした。今回は諦めます……", bot.Name)
 					} else {
 						if err := db.deleteItem(bot, item); err != nil {
-							log.Printf("info: %s がトゥート済みアイテムの削除に失敗しました。\n", bot.Name)
+							log.Printf("info: %s がトゥート済みアイテムの削除に失敗しました", bot.Name)
 						}
 					}
 				}
 			}()
 		case <-ctx.Done():
-			log.Printf("info: %s が今日の定期トゥートを終了しました。", bot.Name)
+			log.Printf("info: %s が今日の定期トゥートを終了しました", bot.Name)
 			break LOOP
 		}
 	}
@@ -56,7 +56,7 @@ func (bot *Persona) createNewsToot(db *DB) (toot mastodon.Toot, item Item, err e
 	// たまった候補からランダムに一つ選ぶ
 	item, err = db.pickItem(bot)
 	if err != nil {
-		log.Printf("info: %s が投稿アイテムを選択できませんでした。\n", bot.Name)
+		log.Printf("info: %s が投稿アイテムを選択できませんでした", bot.Name)
 	}
 	if item.Title == "" {
 		return
@@ -95,7 +95,7 @@ func (bot *Persona) messageFromItem(item Item) (msg string, err error) {
 
 	result, err := parse(txt)
 	if err != nil {
-		log.Printf("info: %s がトゥート時のサマリーのパースに失敗しました。\n", bot.Name)
+		log.Printf("info: %s がトゥート時のサマリーのパースに失敗しました", bot.Name)
 		return
 	}
 
