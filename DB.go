@@ -81,6 +81,26 @@ func (db *DB) addNewBots(bots []*Persona) (err error) {
 	return
 }
 
+// deleteOldCandidates は、多すぎるトゥート候補を古いものから削除する
+func (db *DB) deleteOldCandidates(bot *Persona, cap int) (err error) {
+	_, err = db.Exec(`
+		DELETE FROM candidates
+		WHERE
+			bot_id = ? AND id not in (
+				SELECT * FROM (
+					SELECT id FROM candidates
+					ORDER BY id DESC limit ?
+				) v
+			)`,
+		bot.DBID,
+		cap,
+	)
+	if err != nil {
+		log.Printf("alert: %s のDBエラーです：%s", bot.Name, err)
+	}
+	return
+}
+
 // stockItemsは、新規RSSアイテムの中からbotが興味を持ったitemをストックする。
 func (db *DB) stockItems(bot *Persona) (err error) {
 	// botの情報を取得
@@ -94,7 +114,7 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 			name = ?`,
 		bot.Name,
 	).Scan(&checkedUntil); err != nil {
-		log.Printf("info: botsテーブルから %s の情報取得に失敗しました。：%s\n", bot.Name, err)
+		log.Printf("info: botsテーブルから %s の情報取得に失敗しました：%s", bot.Name, err)
 		return err
 	}
 
@@ -111,7 +131,7 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 		checkedUntil,
 	)
 	if err != nil {
-		log.Printf("info: itemsテーブルから %s の趣味を集め損ねました。：%s\n", bot.Name, err)
+		log.Printf("info: itemsテーブルから %s の趣味を集め損ねました：%s", bot.Name, err)
 		return
 	}
 	defer rows.Close()
@@ -122,14 +142,14 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 		var id int
 		var title, url, summary string
 		if err := rows.Scan(&id, &title, &url, &summary); err != nil {
-			log.Printf("info: itemsテーブルから一行の情報取得に失敗しました。：%s\n", err)
+			log.Printf("info: itemsテーブルから一行の情報取得に失敗しました：%s", err)
 			continue
 		}
 		items = append(items, Item{ID: id, Title: title, URL: url, Summary: summary})
 	}
 	err = rows.Err()
 	if err != nil {
-		log.Printf("info: itemテーブルへの接続に結局失敗しました。：%s\n", err)
+		log.Printf("info: itemテーブルへの接続に結局失敗しました：%s", err)
 		return
 	}
 	rows.Close()
@@ -143,7 +163,7 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 		}
 		result, err := parse(sumStr)
 		if err != nil {
-			log.Printf("info: id: %d のサマリーのパースに失敗しました。\n", item.ID)
+			log.Printf("info: id: %d のサマリーのパースに失敗しました", item.ID)
 			continue
 		}
 
@@ -178,7 +198,7 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 			params...,
 		)
 		if err != nil {
-			log.Printf("info: candidatesテーブルが更新できませんでした。：%s\n", err)
+			log.Printf("info: candidatesテーブルが更新できませんでした：%s", err)
 			return
 		}
 	}
@@ -196,7 +216,7 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 		bot.DBID,
 	)
 	if err != nil {
-		log.Printf("info: %s のchecked_untilが更新できませんでした。%s\n", bot.Name, err)
+		log.Printf("info: %s のchecked_untilが更新できませんでした：%s", bot.Name, err)
 	}
 
 	return
@@ -219,7 +239,7 @@ func (db *DB) pickItem(bot *Persona) (item Item, err error) {
 		bot.DBID,
 	)
 	if err != nil {
-		log.Printf("info: %s の投稿候補を集め損ねました。%s\n", bot.Name, err)
+		log.Printf("info: %s の投稿候補を集め損ねました：%s", bot.Name, err)
 		return
 	}
 	defer rows.Close()
@@ -230,14 +250,14 @@ func (db *DB) pickItem(bot *Persona) (item Item, err error) {
 		var id int
 		var title, url, content string
 		if err := rows.Scan(&id, &title, &url, &content); err != nil {
-			log.Printf("info: itemsテーブルから一行の情報取得に失敗しました。%s\n", err)
+			log.Printf("info: itemsテーブルから一行の情報取得に失敗しました：%s", err)
 			continue
 		}
 		items = append(items, Item{ID: id, Title: title, URL: url, Content: content})
 	}
 	err = rows.Err()
 	if err != nil {
-		log.Printf("info: itemテーブルの行読み込みに結局失敗しました。：%s\n", err)
+		log.Printf("info: itemテーブルの行読み込みに結局失敗しました：%s", err)
 		return
 	}
 	rows.Close()
@@ -270,7 +290,7 @@ func (db *DB) botID(bot *Persona) (id int, err error) {
 			name = ?`,
 		bot.Name,
 	).Scan(&id); err != nil {
-		log.Printf("info: botsテーブルから %s のID取得に失敗しました。：%s\n", bot.Name, err)
+		log.Printf("info: botsテーブルから %s のID取得に失敗しました：%s", bot.Name, err)
 		return
 	}
 	return
@@ -287,7 +307,7 @@ func (db *DB) deleteItem(bot *Persona, item Item) (err error) {
 		bot.DBID,
 	)
 	if err != nil {
-		log.Printf("alert: %s がcandidatesから%dの削除に失敗しました。：%s\n", bot.Name, item.ID, err)
+		log.Printf("alert: %s がcandidatesから%dの削除に失敗しました：%s", bot.Name, item.ID, err)
 	}
 	return
 }

@@ -21,9 +21,17 @@ LOOP:
 		select {
 		case <-tc:
 			go func() {
+				if err := db.deleteOldCandidates(bot, 20); err != nil {
+					log.Printf("info :%s が古いトゥート候補の削除に失敗しました", bot.Name)
+					return
+				}
+				if err := db.stockItems(bot); err != nil {
+					log.Printf("info: %s がアイテムの収集に失敗しました。\n", bot.Name)
+					return
+				}
 				toot, item, err := bot.createNewsToot(db)
 				if err != nil {
-					log.Printf("info :%s がトゥートの作成に失敗しました。\n", bot.Name)
+					log.Printf("info :%s がトゥートの作成に失敗しました", bot.Name)
 					return
 				}
 				if item.Title != "" {
@@ -45,12 +53,6 @@ LOOP:
 
 // createNewsTootはトゥートする内容を作成する。
 func (bot *Persona) createNewsToot(db *DB) (toot mastodon.Toot, item Item, err error) {
-	// データベースから新規itemを物色してデータベースに登録
-	if err != db.stockItems(bot) {
-		log.Printf("info: %s がアイテムの収集に失敗しました。\n", bot.Name)
-		return
-	}
-
 	// たまった候補からランダムに一つ選ぶ
 	item, err = db.pickItem(bot)
 	if err != nil {
