@@ -23,6 +23,7 @@ type Item struct {
 	Content string
 	Summary string
 	Keyword string
+	Updated time.Time
 }
 
 // newDBは、新たなデータベース接続を作成する。
@@ -89,7 +90,7 @@ func (db *DB) deleteOldCandidates(bot *Persona, cap int) (err error) {
 			bot_id = ? AND id not in (
 				SELECT * FROM (
 					SELECT id FROM candidates
-					ORDER BY id DESC limit ?
+					ORDER BY updated_at DESC limit ?
 				) v
 			)`,
 		bot.DBID,
@@ -121,7 +122,7 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 	// itemsテーブルから新規itemを取得
 	rows, err := db.Query(`
 		SELECT
-			id, title, url, summary
+			id, title, url, updated_at, summary
 		FROM
 			items
 		WHERE
@@ -141,11 +142,12 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 	for rows.Next() {
 		var id int
 		var title, url, summary string
-		if err := rows.Scan(&id, &title, &url, &summary); err != nil {
+		var updated time.Time
+		if err := rows.Scan(&id, &title, &url, &updated, &summary); err != nil {
 			log.Printf("info: itemsテーブルから一行の情報取得に失敗しました：%s", err)
 			continue
 		}
-		items = append(items, Item{ID: id, Title: title, URL: url, Summary: summary})
+		items = append(items, Item{ID: id, Title: title, URL: url, Updated: updated, Summary: summary})
 	}
 	err = rows.Err()
 	if err != nil {
@@ -188,7 +190,7 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 		now := time.Now()
 		for _, item := range myItems {
 			vsts = append(vsts, "(?, ?, ?, ?, ?)")
-			params = append(params, bot.DBID, item.ID, now, now, item.Keyword)
+			params = append(params, bot.DBID, item.ID, now, item.Updated, item.Keyword)
 		}
 		vst := strings.Join(vsts, ", ")
 		_, err = db.Exec(`
