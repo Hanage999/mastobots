@@ -7,8 +7,8 @@ import (
 	"math/rand"
 	"os/exec"
 	"strings"
+	"unicode"
 
-	"github.com/abadojack/whatlanggo"
 	"golang.org/x/net/html"
 	"gopkg.in/jdkato/prose.v2"
 )
@@ -114,13 +114,18 @@ func parse(text string) (result parseResult, err error) {
 		return
 	}
 
-	{
-		info := whatlanggo.Detect(text)
-		if whatlanggo.LangToString(info.Lang) == "eng" {
-			result, err = parseEnglish(text)
-		} else {
-			result, err = parseJapanese(text)
+	jap := false
+	for _, r := range text {
+		if unicode.In(r, unicode.Hiragana, unicode.Katakana) {
+			jap = true
+			break
 		}
+	}
+
+	if jap {
+		result, err = parseJapanese(text)
+	} else {
+		result, err = parseEnglish(text)
 	}
 
 	return
