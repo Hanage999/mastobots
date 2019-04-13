@@ -85,11 +85,11 @@ func (bot *Persona) messageFromItem(item Item) (msg string, err error) {
 
 	// 2ちゃんねるヘッダー除去
 	rep := regexp.MustCompile(`\d+[:：]?.*\d{4}\/\d{2}\/\d{2}\(.\) *\d{2}:\d{2}:\d{2}(\.\d+)?( ID:[ -~｡-ﾟ]+)?`)
-	txt = rep.ReplaceAllString(txt, "　")
+	txt = rep.ReplaceAllString(txt, " ")
 
 	// url除去
 	rep = regexp.MustCompile(`(http(s)?:\/\/)?([\w\-]+\.)+[\w-]+(\/[\w\- .\/?%&=]*)?`)
-	txt = rep.ReplaceAllString(txt, "　")
+	txt = rep.ReplaceAllString(txt, " ")
 
 	log.Printf("trace: id %d Jumanに食わせるcontent：%s\n\n", item.ID, txt)
 
