@@ -83,7 +83,7 @@ func (db *DB) addNewBots(bots []*Persona) (err error) {
 }
 
 // deleteOldCandidates は、多すぎるトゥート候補を古いものから削除する
-func (db *DB) deleteOldCandidates(bot *Persona, cap int) (err error) {
+func (db *DB) deleteOldCandidates(bot *Persona) (err error) {
 	_, err = db.Exec(`
 		DELETE FROM candidates
 		WHERE
@@ -94,7 +94,7 @@ func (db *DB) deleteOldCandidates(bot *Persona, cap int) (err error) {
 				) v
 			)`,
 		bot.DBID,
-		cap,
+		bot.ItemPool,
 	)
 	if err != nil {
 		log.Printf("alert: %s のDBエラーです：%s", bot.Name, err)

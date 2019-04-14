@@ -23,6 +23,7 @@ type Persona struct {
 	Assertion string
 	FirstFire int
 	Interval  int
+	ItemPool  int
 	Hashtags  []string
 	Keywords  []string
 	Comments  []string

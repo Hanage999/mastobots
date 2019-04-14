@@ -21,7 +21,7 @@ LOOP:
 		select {
 		case <-tc:
 			go func() {
-				if err := db.deleteOldCandidates(bot, 20); err != nil {
+				if err := db.deleteOldCandidates(bot); err != nil {
 					log.Printf("info :%s が古いトゥート候補の削除に失敗しました", bot.Name)
 					return
 				}
