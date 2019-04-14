@@ -124,7 +124,7 @@ func (bot *Persona) messageFromItem(item Item) (msg string, err error) {
 	msg = strings.Replace(msg, "_topkana1_", best.firstKana, -1)
 
 	// リンクとハッシュタグを追加
-	msg += "\n\n【" + item.Title + "】 " + item.URL + "\n\n" + hashtagStr
+	msg += "\n\n" + item.Title + " " + item.URL + "\n\n" + hashtagStr
 	log.Printf("trace: %s のトゥート内容：\n\n%s", bot.Name, msg)
 	return
 }
