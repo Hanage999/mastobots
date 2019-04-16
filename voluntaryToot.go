@@ -13,9 +13,21 @@ import (
 
 // periodicTootは、指定された時刻（分）を皮切りに一定時間ごとにトゥートする。
 func (bot *Persona) periodicToot(ctx context.Context, db *DB) {
+	itvl := time.Duration(bot.Interval) * time.Minute
+
+	// 起動後最初のトゥートまでの待機時間を、Intervalより短くする
+	delay := until(-1, bot.FirstFire)
+	for i := 1; delay > itvl; i++ {
+		m := bot.FirstFire + bot.Interval*i
+		if m >= 60 {
+			m -= 60
+		}
+		delay = until(-1, m)
+	}
+
+	tc := tickAfterWait(ctx, delay, itvl)
 	log.Printf("info: %s が今日の定期トゥートを開始しました", bot.Name)
 
-	tc := tickAfterWait(ctx, until(-1, bot.FirstFire), time.Duration(bot.Interval)*time.Minute)
 LOOP:
 	for {
 		select {
