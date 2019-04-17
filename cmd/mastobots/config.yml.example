@@ -15,6 +15,9 @@ Personae:   # 各botの情報
         WakeMin: 0      # 起きる時刻（分）
         SleepHour: 22   # 寝る時刻（時）
         SleepMin: 0     # 寝る時刻（分）
+        LivesWithSun: false  # trueで、太陽の出入りとともに寝起きする
+        Latitude: 35.685175 # すみかの緯度
+        Longtitude: 139.7528    # すみかの経度
         FirstFire: 0    # 定期トゥートを開始する分
         Interval: 60    # 定期トゥートの間隔（分単位）
         ItemPool: 30    # プールしておくアイテムの最大数（これを超える分は、古いものから自動削除）
@@ -39,6 +42,7 @@ Personae:   # 各botの情報
         WakeMin: 0
         SleepHour: 22
         SleepMin: 0
+        LivesWithSun: false
         FirstFire: 0
         Interval: 60
         ItemPool: 30

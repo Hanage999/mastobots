@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
 	"golang.org/x/net/html"
 )
@@ -45,6 +46,14 @@ type Location struct {
 	City       string `json:"city"`
 	Area       string `json:"area"`
 	Prefecture string `json:"prefecture"`
+}
+
+// SunInfo は、日の入りと日の出時刻を格納する
+type SunInfo struct {
+	Results struct {
+		Rise string `json:"civil_twilight_begin"`
+		Set  string `json:"civil_twilight_end"`
+	} `json:"results"`
 }
 
 // getLocationCodes は、livedoor天気予報の地域コードを取得する
@@ -234,4 +243,50 @@ func (result jumanResult) isWeatherRelated() bool {
 		}
 	}
 	return false
+}
+
+func getDayCycleBySunMovement(lat, lng float64) (wt, st time.Time, err error) {
+	days := [...]string{"today", "tomorrow"}
+	sunrise := make(map[string]time.Time, len(days))
+	sunset := make(map[string]time.Time, len(days))
+	format := "2006-01-02T15:04:05-07:00"
+
+	for _, day := range days {
+		url := "https://api.sunrise-sunset.org/json?" + "lat=" + fmt.Sprint(lat) + "&lng=" + fmt.Sprint(lng) + "&date=" + day + "&formatted=0"
+
+		res, err := http.Get(url)
+		if err != nil {
+			log.Printf("日の出日没時刻サイトへのリクエストに失敗しました：%s", err)
+			return wt, st, err
+		}
+		if code := res.StatusCode; code >= 400 {
+			err = fmt.Errorf("日の出日没時刻サイトへの接続エラーです(%d)", code)
+			log.Printf("info: %s", err)
+			return wt, st, err
+		}
+		var sun SunInfo
+		if err = json.NewDecoder(res.Body).Decode(&sun); err != nil {
+			log.Printf("info: %s の太陽の出入り時刻がデコードできませんでした：%s", day, err)
+			res.Body.Close()
+			return wt, st, err
+		}
+		res.Body.Close()
+
+		sunrise[day], _ = time.Parse(format, sun.Results.Rise)
+		sunset[day], _ = time.Parse(format, sun.Results.Set)
+	}
+
+	wt = sunrise["today"]
+	st = sunset["today"]
+
+	now := time.Now()
+
+	if sunrise["today"].Before(now) {
+		wt = sunrise["tomorrow"]
+	}
+	if sunset["today"].Before(now) {
+		st = sunset["tomorrow"]
+	}
+
+	return
 }

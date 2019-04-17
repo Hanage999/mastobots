@@ -16,13 +16,13 @@ func (bot *Persona) periodicToot(ctx context.Context, db *DB) {
 	itvl := time.Duration(bot.Interval) * time.Minute
 
 	// 起動後最初のトゥートまでの待機時間を、Intervalより短くする
-	delay := until(-1, bot.FirstFire)
+	delay := until(-1, bot.FirstFire, 0)
 	for i := 1; delay > itvl; i++ {
 		m := bot.FirstFire + bot.Interval*i
 		if m >= 60 {
 			m -= 60
 		}
-		delay = until(-1, m)
+		delay = until(-1, m, 0)
 	}
 
 	tc := tickAfterWait(ctx, delay, itvl)

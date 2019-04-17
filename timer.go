@@ -37,16 +37,16 @@ func tickAfterWait(ctx context.Context, wait time.Duration, itvl time.Duration) 
 }
 
 // untilは、指定された時刻までのDurationを返す。hourが負数の時は、分だけが指定されたとみなす。
-func until(hour, min int) (dur time.Duration) {
+func until(hour, min, sec int) (dur time.Duration) {
 	now := time.Now()
 	var add time.Duration
 	var t time.Time
 
 	if hour < 0 {
-		t = time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), min, 0, 0, now.Location())
+		t = time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), min, sec, 0, now.Location())
 		add = 60 * time.Minute
 	} else {
-		t = time.Date(now.Year(), now.Month(), now.Day(), hour, min, 0, 0, now.Location())
+		t = time.Date(now.Year(), now.Month(), now.Day(), hour, min, sec, 0, now.Location())
 		add = 24 * time.Hour
 	}
 

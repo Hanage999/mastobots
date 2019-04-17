@@ -11,28 +11,31 @@ import (
 
 // Persona は、botの属性を格納する。
 type Persona struct {
-	Name      string
-	Instance  string
-	MyApp     *MastoApp
-	Email     string
-	Password  string
-	Client    *mastodon.Client
-	MyID      mastodon.ID
-	Title     string
-	Starter   string
-	Assertion string
-	FirstFire int
-	Interval  int
-	ItemPool  int
-	Hashtags  []string
-	Keywords  []string
-	Comments  []string
-	DBID      int
-	WakeHour  int
-	WakeMin   int
-	SleepHour int
-	SleepMin  int
-	Awake     time.Duration
+	Name         string
+	Instance     string
+	MyApp        *MastoApp
+	Email        string
+	Password     string
+	Client       *mastodon.Client
+	MyID         mastodon.ID
+	Title        string
+	Starter      string
+	Assertion    string
+	FirstFire    int
+	Interval     int
+	ItemPool     int
+	Hashtags     []string
+	Keywords     []string
+	Comments     []string
+	DBID         int
+	WakeHour     int
+	WakeMin      int
+	SleepHour    int
+	SleepMin     int
+	LivesWithSun bool
+	Latitude     float64
+	Longtitude   float64
+	Awake        time.Duration
 }
 
 // initPersonaは、botとインスタンスの接続を確立する。
@@ -69,8 +72,18 @@ func initPersona(apps []*MastoApp, bot *Persona) (err error) {
 
 // spawn は、botの活動を開始する
 func (bot *Persona) spawn(ctx context.Context, db *DB) {
-	tillWake := until(bot.WakeHour, bot.WakeMin)
-	tillSleep := until(bot.SleepHour, bot.SleepMin)
+	tillWake := until(bot.WakeHour, bot.WakeMin, 0)
+	tillSleep := until(bot.SleepHour, bot.SleepMin, 0)
+	if bot.LivesWithSun {
+		wt, st, err := getDayCycleBySunMovement(bot.Latitude, bot.Longtitude)
+		if err == nil {
+			tillWake = time.Until(wt)
+			tillSleep = time.Until(st)
+			log.Printf("info: %s の起床時刻：%s", bot.Name, wt.Local())
+			log.Printf("info: %s の就寝時刻：%s", bot.Name, st.Local())
+		}
+	}
+
 	bot.Awake = tillSleep - tillWake
 
 	if bot.Awake < time.Second && bot.Awake > -1*time.Second {
@@ -125,7 +138,11 @@ func (bot *Persona) daylife(ctx context.Context, db *DB, sleep time.Duration, ac
 			} else {
 				weatherStr = "。" + forecastMessage(data, bot.Assertion)
 			}
-			toot := mastodon.Toot{Status: "おはようございます" + bot.Assertion + weatherStr}
+			withSun := ""
+			if bot.LivesWithSun {
+				withSun = "明るくなってきた" + bot.Assertion + "ね。"
+			}
+			toot := mastodon.Toot{Status: withSun + "おはようございます" + bot.Assertion + weatherStr}
 			if err := bot.post(newCtx, toot); err != nil {
 				log.Printf("info: %s がトゥートできませんでした。今回は諦めます……", bot.Name)
 			}
@@ -134,11 +151,30 @@ func (bot *Persona) daylife(ctx context.Context, db *DB, sleep time.Duration, ac
 
 	select {
 	case <-newCtx.Done():
-		toot := mastodon.Toot{Status: "おやすみなさい" + bot.Assertion + "💤……"}
+		withSun := ""
+		if bot.LivesWithSun {
+			withSun = "もうすっかり暗くなった" + bot.Assertion + "ね。では、"
+		}
+		toot := mastodon.Toot{Status: withSun + "おやすみなさい" + bot.Assertion + "💤……"}
 		if err := bot.post(ctx, toot); err != nil {
 			log.Printf("info: %s がトゥートできませんでした。今回は諦めます……", bot.Name)
 		}
-		s := until(bot.WakeHour, bot.WakeMin)
+		var s time.Duration
+		if bot.LivesWithSun {
+			time.Sleep(1 * time.Second)
+			wt, st, err := getDayCycleBySunMovement(bot.Latitude, bot.Longtitude)
+			if err != nil {
+				s = 8 * time.Hour
+				bot.Awake = 16 * time.Hour
+			} else {
+				s = time.Until(wt)
+				bot.Awake = time.Until(st) - s
+				log.Printf("info: %s の起床時刻：%s", bot.Name, wt.Local())
+				log.Printf("info: %s の就寝時刻：%s", bot.Name, st.Local())
+			}
+		} else {
+			s = until(bot.WakeHour, bot.WakeMin, 0)
+		}
 		go bot.daylife(ctx, db, s, bot.Awake)
 	case <-ctx.Done():
 	}
