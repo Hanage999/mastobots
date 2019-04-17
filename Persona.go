@@ -159,7 +159,7 @@ func (bot *Persona) daylife(ctx context.Context, db *DB, sleep time.Duration, ac
 		if err := bot.post(ctx, toot); err != nil {
 			log.Printf("info: %s がトゥートできませんでした。今回は諦めます……", bot.Name)
 		}
-		var s time.Duration
+		s := until(bot.WakeHour, bot.WakeMin, 0)
 		if bot.LivesWithSun {
 			time.Sleep(1 * time.Second)
 			wt, st, err := getDayCycleBySunMovement(bot.Latitude, bot.Longtitude)
@@ -172,8 +172,6 @@ func (bot *Persona) daylife(ctx context.Context, db *DB, sleep time.Duration, ac
 				log.Printf("info: %s の起床時刻：%s", bot.Name, wt.Local())
 				log.Printf("info: %s の就寝時刻：%s", bot.Name, st.Local())
 			}
-		} else {
-			s = until(bot.WakeHour, bot.WakeMin, 0)
 		}
 		go bot.daylife(ctx, db, s, bot.Awake)
 	case <-ctx.Done():

@@ -245,8 +245,10 @@ func (result jumanResult) isWeatherRelated() bool {
 	return false
 }
 
+// getDayCycleBySunMovement は、太陽の出入り時刻と現在時刻に応じて寝起きの時刻を返す
 func getDayCycleBySunMovement(lat, lng float64) (wt, st time.Time, err error) {
-	days := [...]string{"today", "tomorrow"}
+	today, tomorrow := "today", "tomorrow"
+	days := [...]string{today, tomorrow}
 	sunrise := make(map[string]time.Time, len(days))
 	sunset := make(map[string]time.Time, len(days))
 	format := "2006-01-02T15:04:05-07:00"
@@ -276,16 +278,16 @@ func getDayCycleBySunMovement(lat, lng float64) (wt, st time.Time, err error) {
 		sunset[day], _ = time.Parse(format, sun.Results.Set)
 	}
 
-	wt = sunrise["today"]
-	st = sunset["today"]
+	wt = sunrise[today]
+	st = sunset[today]
 
 	now := time.Now()
 
-	if sunrise["today"].Before(now) {
-		wt = sunrise["tomorrow"]
+	if sunrise[today].Before(now) {
+		wt = sunrise[tomorrow]
 	}
-	if sunset["today"].Before(now) {
-		st = sunset["tomorrow"]
+	if sunset[today].Before(now) {
+		st = sunset[tomorrow]
 	}
 
 	return
