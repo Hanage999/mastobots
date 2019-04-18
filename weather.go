@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"golang.org/x/net/html"
+	"gopkg.in/ugjka/go-tz.v2/tz"
 )
 
 // WeatherData は、livedoor天気予報のAPIが返してくるjsonデータを保持する
@@ -246,31 +247,47 @@ func (result jumanResult) isWeatherRelated() bool {
 }
 
 // getDayCycleBySunMovement は、太陽の出入り時刻と現在時刻に応じて寝起きの時刻を返す
-func getDayCycleBySunMovement(lat, lng float64) (wt, st time.Time, err error) {
+func getDayCycleBySunMovement(lat, lng float64) (wt, st time.Time, zone string, err error) {
+	var loc *time.Location
+	zn, err := tz.GetZone(tz.Point{
+		Lon: lng, Lat: lat,
+	})
+	if err != nil {
+		loc, _ = time.LoadLocation("Local")
+	} else {
+		zone = zn[0]
+		loc, _ = time.LoadLocation(zone)
+	}
+	now := time.Now().In(loc)
+
 	today, tomorrow := "today", "tomorrow"
 	days := [...]string{today, tomorrow}
+
 	sunrise := make(map[string]time.Time, len(days))
 	sunset := make(map[string]time.Time, len(days))
+
 	format := "2006-01-02T15:04:05-07:00"
 
-	for _, day := range days {
-		url := "https://api.sunrise-sunset.org/json?" + "lat=" + fmt.Sprint(lat) + "&lng=" + fmt.Sprint(lng) + "&date=" + day + "&formatted=0"
+	for i, day := range days {
+		y, m, d := now.Add(time.Duration(i) * 24 * time.Hour).Date()
+		dst := fmt.Sprintf("%d-%d-%d", y, int(m), d)
+		url := "https://api.sunrise-sunset.org/json?" + "lat=" + fmt.Sprint(lat) + "&lng=" + fmt.Sprint(lng) + "&date=" + dst + "&formatted=0"
 
 		res, err := http.Get(url)
 		if err != nil {
 			log.Printf("日の出日没時刻サイトへのリクエストに失敗しました：%s", err)
-			return wt, st, err
+			return wt, st, "", err
 		}
 		if code := res.StatusCode; code >= 400 {
 			err = fmt.Errorf("日の出日没時刻サイトへの接続エラーです(%d)", code)
 			log.Printf("info: %s", err)
-			return wt, st, err
+			return wt, st, "", err
 		}
 		var sun SunInfo
 		if err = json.NewDecoder(res.Body).Decode(&sun); err != nil {
 			log.Printf("info: %s の太陽の出入り時刻がデコードできませんでした：%s", day, err)
 			res.Body.Close()
-			return wt, st, err
+			return wt, st, "", err
 		}
 		res.Body.Close()
 
@@ -281,7 +298,7 @@ func getDayCycleBySunMovement(lat, lng float64) (wt, st time.Time, err error) {
 	wt = sunrise[today]
 	st = sunset[today]
 
-	now := time.Now()
+	now = time.Now().In(loc)
 
 	if sunrise[today].Before(now) {
 		wt = sunrise[tomorrow]

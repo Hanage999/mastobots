@@ -34,7 +34,8 @@ type Persona struct {
 	SleepMin     int
 	LivesWithSun bool
 	Latitude     float64
-	Longtitude   float64
+	Longitude    float64
+	Timezone     string
 	Awake        time.Duration
 }
 
@@ -75,12 +76,14 @@ func (bot *Persona) spawn(ctx context.Context, db *DB) {
 	tillWake := until(bot.WakeHour, bot.WakeMin, 0)
 	tillSleep := until(bot.SleepHour, bot.SleepMin, 0)
 	if bot.LivesWithSun {
-		wt, st, err := getDayCycleBySunMovement(bot.Latitude, bot.Longtitude)
+		bot.Timezone = time.Local.String()
+		wt, st, zone, err := getDayCycleBySunMovement(bot.Latitude, bot.Longitude)
 		if err == nil {
+			bot.Timezone = zone
 			tillWake = time.Until(wt)
 			tillSleep = time.Until(st)
-			log.Printf("info: %s の起床時刻：%s", bot.Name, wt.Local())
-			log.Printf("info: %s の就寝時刻：%s", bot.Name, st.Local())
+			log.Printf("info: %s にいる %s の起床時刻：%s", bot.Timezone, bot.Name, wt.Local())
+			log.Printf("info: %s にいる %s の就寝時刻：%s", bot.Timezone, bot.Name, st.Local())
 		}
 	}
 
@@ -140,7 +143,7 @@ func (bot *Persona) daylife(ctx context.Context, db *DB, sleep time.Duration, ac
 			}
 			withSun := ""
 			if bot.LivesWithSun {
-				withSun = "明るくなってきた" + bot.Assertion + "ね。"
+				withSun = bot.Timezone + "のあたりはそろそろ明るくなってきた" + bot.Assertion + "ね。"
 			}
 			toot := mastodon.Toot{Status: withSun + "おはようございます" + bot.Assertion + weatherStr}
 			if err := bot.post(newCtx, toot); err != nil {
@@ -153,7 +156,7 @@ func (bot *Persona) daylife(ctx context.Context, db *DB, sleep time.Duration, ac
 	case <-newCtx.Done():
 		withSun := ""
 		if bot.LivesWithSun {
-			withSun = "もうすっかり暗くなった" + bot.Assertion + "ね。では、"
+			withSun = bot.Timezone + "のあたりはもうすっかり暗くなった" + bot.Assertion + "ね。では、"
 		}
 		toot := mastodon.Toot{Status: withSun + "おやすみなさい" + bot.Assertion + "💤……"}
 		if err := bot.post(ctx, toot); err != nil {
@@ -162,15 +165,16 @@ func (bot *Persona) daylife(ctx context.Context, db *DB, sleep time.Duration, ac
 		s := until(bot.WakeHour, bot.WakeMin, 0)
 		if bot.LivesWithSun {
 			time.Sleep(1 * time.Second)
-			wt, st, err := getDayCycleBySunMovement(bot.Latitude, bot.Longtitude)
+			wt, st, zone, err := getDayCycleBySunMovement(bot.Latitude, bot.Longitude)
 			if err != nil {
 				s = 8 * time.Hour
 				bot.Awake = 16 * time.Hour
 			} else {
 				s = time.Until(wt)
+				bot.Timezone = zone
 				bot.Awake = time.Until(st) - s
-				log.Printf("info: %s の起床時刻：%s", bot.Name, wt.Local())
-				log.Printf("info: %s の就寝時刻：%s", bot.Name, st.Local())
+				log.Printf("info: %s にいる %s の起床時刻：%s", bot.Timezone, bot.Name, wt.Local())
+				log.Printf("info: %s にいる %s の就寝時刻：%s", bot.Timezone, bot.Name, st.Local())
 			}
 		}
 		go bot.daylife(ctx, db, s, bot.Awake)
