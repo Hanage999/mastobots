@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"math/rand"
+	"strings"
 	"time"
 
 	mastodon "github.com/mattn/go-mastodon"
@@ -35,8 +36,24 @@ type Persona struct {
 	LivesWithSun bool
 	Latitude     float64
 	Longitude    float64
-	Timezone     string
-	Awake        time.Duration
+	LocInfo      OCResult
+}
+
+// OCResult は、OpenCageからのデータを格納する
+type OCResult struct {
+	Annotations struct {
+		Flag     string `json:"flag"`
+		Timezone struct {
+			Name string `json:"name"`
+		} `json:"timezone"`
+	} `json:"annotations"`
+	Components map[string]string `json:"components"`
+	Formatted  string            `json:"formatted"`
+}
+
+// OCResults は、OpenCageからのデータを格納する
+type OCResults struct {
+	Results []OCResult
 }
 
 // initPersonaは、botとインスタンスの接続を確立する。
@@ -75,38 +92,24 @@ func initPersona(apps []*MastoApp, bot *Persona) (err error) {
 func (bot *Persona) spawn(ctx context.Context, db *DB) {
 	tillWake := until(bot.WakeHour, bot.WakeMin, 0)
 	tillSleep := until(bot.SleepHour, bot.SleepMin, 0)
-	if bot.LivesWithSun {
-		bot.Timezone = time.Local.String()
-		wt, st, zone, err := getDayCycleBySunMovement(bot.Latitude, bot.Longitude)
-		if err == nil {
-			bot.Timezone = zone
-			tillWake = time.Until(wt)
-			tillSleep = time.Until(st)
-			log.Printf("info: %s にいる %s の起床時刻：%s", bot.Timezone, bot.Name, wt.Local())
-			log.Printf("info: %s にいる %s の就寝時刻：%s", bot.Timezone, bot.Name, st.Local())
-		}
-	}
+	awake := tillSleep - tillWake
 
-	bot.Awake = tillSleep - tillWake
-
-	if bot.Awake < time.Second && bot.Awake > -1*time.Second {
+	if awake < time.Second && awake > -1*time.Second {
 		bot.activities(ctx, db)
 		return
 	}
 
-	if bot.Awake < 0 {
-		bot.Awake += 24 * time.Hour
+	if awake < 0 {
+		awake += 24 * time.Hour
 	}
 
-	s := tillWake
-	w := bot.Awake
-	if tillSleep < bot.Awake {
-		s, _ = time.ParseDuration("0s")
-		w = tillSleep
+	if awake > tillSleep {
+		tillWake = 0
+		awake = tillSleep
 	}
 
 	// あとは任せた
-	go bot.daylife(ctx, db, s, w)
+	go bot.daylife(ctx, db, tillWake, awake)
 }
 
 // daylife は、botの活動サイクルを作る
@@ -141,10 +144,113 @@ func (bot *Persona) daylife(ctx context.Context, db *DB, sleep time.Duration, ac
 			} else {
 				weatherStr = "。" + forecastMessage(data, bot.Assertion)
 			}
-			withSun := ""
-			if bot.LivesWithSun {
-				withSun = bot.Timezone + "のあたりはそろそろ明るくなってきた" + bot.Assertion + "ね。"
+			toot := mastodon.Toot{Status: "おはようございます" + bot.Assertion + weatherStr}
+			if err := bot.post(newCtx, toot); err != nil {
+				log.Printf("info: %s がトゥートできませんでした。今回は諦めます……", bot.Name)
 			}
+		}()
+	}
+
+	select {
+	case <-newCtx.Done():
+		toot := mastodon.Toot{Status: "おやすみなさい" + bot.Assertion + "💤……"}
+		if err := bot.post(ctx, toot); err != nil {
+			log.Printf("info: %s がトゥートできませんでした。今回は諦めます……", bot.Name)
+		}
+		bot.spawn(ctx, db)
+	case <-ctx.Done():
+	}
+}
+
+// spawnWithSun は、太陽とともに生きるbotの活動を開始する
+func (bot *Persona) spawnWithSun(ctx context.Context, db *DB) {
+	tillWake := 8 * time.Hour
+	tillSleep := 24 * time.Hour
+	awake := tillSleep - tillWake
+
+	wt, st, err := getDayCycleBySunMovement(bot.LocInfo.Annotations.Timezone.Name, bot.Latitude, bot.Longitude)
+	if err == nil {
+		tillWake = time.Until(wt)
+		tillSleep = time.Until(st)
+		awake = st.Sub(wt)
+		if awake < 0 {
+			awake += 24 * time.Hour
+		}
+		if awake > tillSleep {
+			tillWake = 0
+			awake = tillSleep
+		}
+		log.Printf("info: %s にいる %s の起床時刻：%s", bot.getLocStr(false), bot.Name, wt.Local())
+		log.Printf("info: %s にいる %s の就寝時刻：%s", bot.getLocStr(false), bot.Name, st.Local())
+	} else {
+		if strings.Index(err.Error(), "白夜か黒夜") != -1 {
+			loc, _ := time.LoadLocation(bot.LocInfo.Annotations.Timezone.Name)
+			now := time.Now().In(loc)
+			_, m, _ := now.Date()
+			if bot.Latitude > 0 {
+				if 3 < int(m) && int(m) < 10 {
+					log.Printf("info: %s がいる %s は今、白夜です", bot.Name, bot.getLocStr(false))
+					tillWake = 0
+					awake = 24 * time.Hour
+				} else {
+					log.Printf("info: %s がいる %s は今、極夜です", bot.Name, bot.getLocStr(false))
+					tillWake = 24 * time.Hour
+					awake = 0
+				}
+			} else {
+				if 3 < int(m) && int(m) < 10 {
+					log.Printf("info: %s がいる %s は今、極夜です", bot.Name, bot.getLocStr(false))
+					tillWake = 24 * time.Hour
+					awake = 0
+				} else {
+					log.Printf("info: %s がいる %s は今、白夜です", bot.Name, bot.getLocStr(false))
+					tillWake = 0
+					awake = 24 * time.Hour
+				}
+			}
+		}
+	}
+
+	// あとは任せた
+	go bot.daylifeWithSun(ctx, db, tillWake, awake)
+}
+
+// daylife は、太陽とともに生きるbotの活動サイクルを作る
+func (bot *Persona) daylifeWithSun(ctx context.Context, db *DB, sleep time.Duration, active time.Duration) {
+	asleep := false
+
+	if sleep.Seconds() > 1 {
+		asleep = true
+		t := time.NewTimer(sleep)
+		defer t.Stop()
+	LOOP:
+		for {
+			select {
+			case <-t.C:
+				break LOOP
+			case <-ctx.Done():
+				return
+			}
+		}
+	}
+
+	newCtx, cancel := context.WithTimeout(ctx, active)
+	defer cancel()
+
+	if active > 0 {
+		bot.activities(newCtx, db)
+	}
+
+	if asleep {
+		go func() {
+			weatherStr := ""
+			data, err := GetRandomWeather(0)
+			if err != nil {
+				log.Printf("info: %s が天気予報を取ってこれませんでした", bot.Name)
+			} else {
+				weatherStr = "。" + forecastMessage(data, bot.Assertion)
+			}
+			withSun := "そろそろ明るくなってきた" + bot.Assertion + "ね。" + bot.getLocStr(false) + "から"
 			toot := mastodon.Toot{Status: withSun + "おはようございます" + bot.Assertion + weatherStr}
 			if err := bot.post(newCtx, toot); err != nil {
 				log.Printf("info: %s がトゥートできませんでした。今回は諦めます……", bot.Name)
@@ -154,30 +260,14 @@ func (bot *Persona) daylife(ctx context.Context, db *DB, sleep time.Duration, ac
 
 	select {
 	case <-newCtx.Done():
-		withSun := ""
-		if bot.LivesWithSun {
-			withSun = bot.Timezone + "のあたりはもうすっかり暗くなった" + bot.Assertion + "ね。では、"
-		}
-		toot := mastodon.Toot{Status: withSun + "おやすみなさい" + bot.Assertion + "💤……"}
-		if err := bot.post(ctx, toot); err != nil {
-			log.Printf("info: %s がトゥートできませんでした。今回は諦めます……", bot.Name)
-		}
-		s := until(bot.WakeHour, bot.WakeMin, 0)
-		if bot.LivesWithSun {
-			time.Sleep(1 * time.Second)
-			wt, st, zone, err := getDayCycleBySunMovement(bot.Latitude, bot.Longitude)
-			if err != nil {
-				s = 8 * time.Hour
-				bot.Awake = 16 * time.Hour
-			} else {
-				s = time.Until(wt)
-				bot.Timezone = zone
-				bot.Awake = time.Until(st) - s
-				log.Printf("info: %s にいる %s の起床時刻：%s", bot.Timezone, bot.Name, wt.Local())
-				log.Printf("info: %s にいる %s の就寝時刻：%s", bot.Timezone, bot.Name, st.Local())
+		if 0 < active && active < 24*time.Hour {
+			withSun := bot.getLocStr(true) + "のあたりはもうすっかり暗くなった" + bot.Assertion + "ね。では、"
+			toot := mastodon.Toot{Status: withSun + "おやすみなさい" + bot.Assertion + "💤……"}
+			if err := bot.post(ctx, toot); err != nil {
+				log.Printf("info: %s がトゥートできませんでした。今回は諦めます……", bot.Name)
 			}
 		}
-		go bot.daylife(ctx, db, s, bot.Awake)
+		bot.spawnWithSun(ctx, db)
 	case <-ctx.Done():
 	}
 }
@@ -244,5 +334,51 @@ func (bot *Persona) relationWith(ctx context.Context, id mastodon.ID) (rel []*ma
 		}
 		break
 	}
+	return
+}
+
+func (bot *Persona) getLocStr(simple bool) (str string) {
+	info := bot.LocInfo
+
+	tp := info.Components["_type"]
+	str = info.Components[tp]
+
+	country := info.Components["country"] + info.Annotations.Flag
+	state := info.Components["state"]
+	stateDistrict := info.Components["state_district"]
+	county := info.Components["county"]
+	city := info.Components["city"]
+	suburb := info.Components["suburb"]
+	town := info.Components["town"]
+
+	names := [...]string{town, suburb, city}
+	for _, name := range names {
+		if str != "" {
+			break
+		}
+		str = name
+	}
+
+	if simple {
+		return
+	}
+
+	if country == "" {
+		country = "国ではないどこか"
+	}
+	if city == "" {
+		city = "名もない町"
+	}
+
+	if city != str {
+		str = state + stateDistrict + county + city + "（" + country + "）" + "の" + str
+	} else {
+		if county != str {
+			str = state + stateDistrict + county + "（" + country + "）" + "の" + str
+		} else {
+			str = state + stateDistrict + "（" + country + "）" + "の" + str
+		}
+	}
+
 	return
 }

@@ -18,6 +18,7 @@ var (
 	maxRetry      = 5
 	retryInterval = time.Duration(5) * time.Second
 	locationCodes map[string]interface{}
+	openCageKey   = ""
 )
 
 // Initialize は、config.ymlに従ってbotとデータベース接続を初期化する。
@@ -69,6 +70,7 @@ func Initialize() (bots []*Persona, db *DB, err error) {
 		return nil, nil, err
 	}
 	appName = conf.GetString("MastoAppName")
+	openCageKey = conf.GetString("OpenCageKey")
 	conf.UnmarshalKey("Personae", &bots)
 	cr = conf.GetStringMapString("DBCredentials")
 
@@ -161,7 +163,17 @@ func ActivateBots(bots []*Persona, db *DB, p int) (err error) {
 
 	// 行ってらっしゃい
 	for _, bot := range bots {
-		go bot.spawn(ctx, db)
+		if bot.LivesWithSun {
+			time.Sleep(1001 * time.Millisecond)
+			bot.LocInfo, err = getLocInfo(openCageKey, bot.Latitude, bot.Longitude)
+			if err != nil {
+				log.Printf("alert: 所在地情報の設定に失敗しました：%s", err)
+				return
+			}
+			go bot.spawnWithSun(ctx, db)
+		} else {
+			go bot.spawn(ctx, db)
+		}
 	}
 
 	<-ctx.Done()

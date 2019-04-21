@@ -6,6 +6,9 @@ DBCredentials:  # MySQLデータベース接続のための資格情報（環境
     Server: localhost:3306
     User: rss
 
+OpenCageKey : ***   # Geocodingサービス  (https://opencagedata.com/) のためのAPIキー（要登録）
+                    # LiveWithSunをtrueにした場合、opencagedataへのユーザ登録とAPIキー取得が必要です。
+
 Personae:   # 各botの情報
     -   Name: mybot
         Instance: https://example.com
@@ -15,7 +18,7 @@ Personae:   # 各botの情報
         WakeMin: 0      # 起きる時刻（分）
         SleepHour: 22   # 寝る時刻（時）
         SleepMin: 0     # 寝る時刻（分）
-        LivesWithSun: false  # trueで、太陽の出入りとともに寝起きする
+        LivesWithSun: false  # trueで、太陽の出入りとともに寝起きする（要：opencagedataへのユーザ登録）
         Latitude: 35.685175 # すみかの緯度
         Longitude: 139.7528    # すみかの経度
         FirstFire: 0    # 定期トゥートを開始する分
