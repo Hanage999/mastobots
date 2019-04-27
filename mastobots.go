@@ -170,10 +170,8 @@ func ActivateBots(bots []*Persona, db *DB, p int) (err error) {
 				log.Printf("alert: 所在地情報の設定に失敗しました：%s", err)
 				return
 			}
-			go bot.spawnWithSun(ctx, db)
-		} else {
-			go bot.spawn(ctx, db)
 		}
+		go bot.spawn(ctx, db)
 	}
 
 	<-ctx.Done()

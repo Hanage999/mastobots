@@ -171,18 +171,13 @@ func parseJapanese(text string) (result jumanResult, err error) {
 	nodes := make([][]string, 0)
 	strange := false
 	for _, s := range nodeStrs {
-		if strings.HasPrefix(s, " ") || strings.HasPrefix(s, "@") || strings.HasPrefix(s, "EOS") || s == "" {
+		if strings.HasPrefix(s, "#") || strings.HasPrefix(s, " ") || strings.HasPrefix(s, "@") || strings.HasPrefix(s, "EOS") || s == "" {
 			continue
 		}
 		node := strings.SplitN(s, " ", 12)
 		if len(node) < 12 {
 			strange = true
 			log.Println("info: 異常なjumanpp解析結果：", node)
-			if node[0] == "#" {
-				err = errors.New("jumanppでエラーが発生しました")
-				log.Printf("info: %s", err)
-				break
-			}
 			continue
 		}
 		nodes = append(nodes, node)

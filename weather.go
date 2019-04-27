@@ -47,14 +47,6 @@ type Location struct {
 	Prefecture string `json:"prefecture"`
 }
 
-// SunInfo は、日の入りと日の出時刻を格納する
-type SunInfo struct {
-	Results struct {
-		Rise string `json:"civil_twilight_begin"`
-		Set  string `json:"civil_twilight_end"`
-	} `json:"results"`
-}
-
 // getLocationCodes は、livedoor天気予報の地域コードを取得する
 func getLocationCodes() (results map[string]interface{}, err error) {
 	url := "http://weather.livedoor.com/forecast/rss/primary_area.xml"

@@ -57,3 +57,26 @@ func until(hour, min, sec int) (dur time.Duration) {
 	dur = t.Sub(now)
 	return
 }
+
+func getDayCycle(wakehour, wakemin, sleephour, sleepmin int) (sleep, active time.Duration) {
+	sleep = until(wakehour, wakemin, 0)
+	tillSleep := until(sleephour, sleepmin, 0)
+	active = tillSleep - sleep
+
+	if wakehour == sleephour && wakemin == sleepmin {
+		sleep = 0
+		active = 24 * time.Hour
+		return
+	}
+
+	if active < 0 {
+		active += 24 * time.Hour
+	}
+
+	if active > tillSleep {
+		sleep = 0
+		active = tillSleep
+	}
+
+	return
+}

@@ -23,9 +23,9 @@ MySQLデータベースに保存された日本語のRSSアイテムをJuman++�
 + トゥートの間隔、コメント、好みの単語などをカスタマイズ可能。
 + 「いい（＋bot固有の語尾）」とメンションすると、背中を押したり押さなかったりしてくれる。
 + botに「フォロー」を含んだメンションをすると、botがフォローしてくる。
-+ botに天気を尋ねると、livedoor天気予報の情報を教えてくれる。特定の場所を指定することもできるが、指定にはほとんど従わない。
++ botに天気を尋ねると、[livedoor天気予報](http://weather.livedoor.com/weather_hacks/webservice)の情報を教えてくれる。特定の場所を指定することもできるが、指定にはほとんど従わない。
 + 寝る。寝ている間はトゥートも反応もしない。就寝時刻と起床時刻は自由に設定可。二つを同時刻に設定すれば、寝ない。
-+ 設定ファイルでLivesWithSunをtrueに設定すると、LatitudeとLongitudeで指定した地点での太陽の出入り時刻に応じて寝起きする。
++ 設定ファイルでLivesWithSunをtrueに設定すると、LatitudeとLongitudeで指定した地点での太陽の出入り時刻に応じて寝起きする。逆ジオコーディングデータは[OpenCage Geocoder](https://opencagedata.com/api)から、時刻は[Sunrise Sunset](https://sunrise-sunset.org/api)からそれぞれ取得。
 + -p <整数> オプション付きで起動すると、<整数>分限定で起動する。
 
 ## 使い方
