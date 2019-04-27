@@ -181,16 +181,18 @@ func getExtremeCycle(noon map[string]time.Time, loc *time.Location, lat float64)
 	isWhite := whiteOrBlack(loc, lat)
 
 	if isWhite {
-		wt = noon[today]
+		// wtを１日で最も暗い時刻に設定
+		wt = noon[today].Add(12 * time.Hour)
 		if wt.Before(now) {
-			wt = noon[tomorrow]
+			wt = noon[tomorrow].Add(12 * time.Hour)
 		}
 		st = time.Time{}
 	} else {
+		// stを１日で最も明るい時刻に設定
 		wt = time.Time{}
-		st = noon[today].Add(12 * time.Hour)
+		st = noon[today]
 		if st.Before(now) {
-			wt = noon[tomorrow].Add(12 * time.Hour)
+			st = noon[tomorrow]
 		}
 	}
 
