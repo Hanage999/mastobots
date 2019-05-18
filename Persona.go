@@ -71,7 +71,7 @@ func initPersona(apps []*MastoApp, bot *Persona) (err error) {
 }
 
 // spawn は、botの活動を開始する
-func (bot *Persona) spawn(ctx context.Context, db *DB) {
+func (bot *Persona) spawn(ctx context.Context, db *DB, firstLaunch bool) {
 	sleep, active := getDayCycle(bot.WakeHour, bot.WakeMin, bot.SleepHour, bot.SleepMin)
 
 	if bot.LivesWithSun {
@@ -92,11 +92,11 @@ func (bot *Persona) spawn(ctx context.Context, db *DB) {
 		}
 	}
 
-	go bot.daylife(ctx, db, sleep, active)
+	go bot.daylife(ctx, db, sleep, active, firstLaunch)
 }
 
 // daylife は、botの活動サイクルを作る
-func (bot *Persona) daylife(ctx context.Context, db *DB, sleep time.Duration, active time.Duration) {
+func (bot *Persona) daylife(ctx context.Context, db *DB, sleep time.Duration, active time.Duration, firstLaunch bool) {
 	wakeWithSun, sleepWithSun := "", ""
 	if bot.LivesWithSun {
 		wakeWithSun = "そろそろ明るくなってきた" + bot.Assertion + "ね。" + bot.getLocStr(false) + "から"
@@ -106,6 +106,12 @@ func (bot *Persona) daylife(ctx context.Context, db *DB, sleep time.Duration, ac
 	if sleep > 0 {
 		t := time.NewTimer(sleep)
 		defer t.Stop()
+		if !firstLaunch && active > 0 {
+			toot := mastodon.Toot{Status: sleepWithSun + "おやすみなさい" + bot.Assertion + "💤……"}
+			if err := bot.post(ctx, toot); err != nil {
+				log.Printf("info: %s がトゥートできませんでした。今回は諦めます……", bot.Name)
+			}
+		}
 	LOOP:
 		for {
 			select {
@@ -141,13 +147,7 @@ func (bot *Persona) daylife(ctx context.Context, db *DB, sleep time.Duration, ac
 
 	select {
 	case <-newCtx.Done():
-		if active > 0 && sleep > 0 {
-			toot := mastodon.Toot{Status: sleepWithSun + "おやすみなさい" + bot.Assertion + "💤……"}
-			if err := bot.post(ctx, toot); err != nil {
-				log.Printf("info: %s がトゥートできませんでした。今回は諦めます……", bot.Name)
-			}
-		}
-		bot.spawn(ctx, db)
+		bot.spawn(ctx, db, false)
 	case <-ctx.Done():
 	}
 }
@@ -231,8 +231,9 @@ func (bot *Persona) getLocStr(simple bool) (str string) {
 	suburb := info.Components["suburb"]
 	town := info.Components["town"]
 	neighborhood := info.Components["neighborhood"]
+	unknown := info.Components["unknown"]
 
-	names := [...]string{neighborhood, town, suburb, city}
+	names := [...]string{unknown, neighborhood, town, suburb, city}
 	for _, name := range names {
 		if str != "" {
 			break

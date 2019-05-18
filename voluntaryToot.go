@@ -93,7 +93,7 @@ func (bot *Persona) messageFromItem(item Item) (msg string, err error) {
 	if !strings.HasPrefix(item.Content, txt) {
 		txt = txt + "\n" + item.Content
 	}
-	log.Printf("trace: 素のcontent：%s\n", txt)
+	log.Printf("trace: 素のcontent：%s", txt)
 
 	// 2ちゃんねるヘッダー除去
 	rep := regexp.MustCompile(`\d+[:：]?.*\d{4}\/\d{2}\/\d{2}\(.\) *\d{2}:\d{2}:\d{2}(\.\d+)?( ID:[ -~｡-ﾟ]+)?`)
@@ -103,7 +103,7 @@ func (bot *Persona) messageFromItem(item Item) (msg string, err error) {
 	rep = regexp.MustCompile(`(http(s)?:\/\/)?([\w\-]+\.)+[\w-]+(\/[\w\- .\/?%&=]*)?`)
 	txt = rep.ReplaceAllString(txt, " ")
 
-	log.Printf("trace: id %d Jumanに食わせるcontent：%s\n\n", item.ID, txt)
+	log.Printf("trace: id %d Jumanに食わせるcontent：%s", item.ID, txt)
 
 	result, err := parse(txt)
 	if err != nil {
