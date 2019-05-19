@@ -36,7 +36,7 @@ type SunInfo struct {
 	} `json:"results"`
 }
 
-// loadLocInfo は、botの座標から所在地情報を取得して格納する
+// getLocInfo は、botの座標から所在地情報を取得して格納する
 func getLocInfo(key string, lat, lng float64) (result OCResult, err error) {
 	query := "https://api.opencagedata.com/geocode/v1/json?q=" + fmt.Sprint(lat) + "%2C" + fmt.Sprint(lng) + "&key=" + key + "&language=ja&pretty=1"
 
@@ -98,7 +98,7 @@ func getDayCycleBySunMovement(zone string, lat, lng float64) (sleep, active time
 	return
 }
 
-// getDayCycleBySunMovement は、太陽の出入り時刻と現在時刻に応じて寝起きの時刻を返す
+// getSleepWakeTimeBySunMovement は、太陽の出入り時刻と現在時刻に応じて寝起きの時刻を返す
 func getSleepWakeTimeBySunMovement(zone string, lat, lng float64) (wt, st time.Time, err error) {
 	var loc *time.Location
 	if strings.Contains(zone, "GMT") {
