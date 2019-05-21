@@ -82,18 +82,22 @@ func (bot *Persona) spawn(ctx context.Context, db *DB, firstLaunch bool) {
 			case "白夜":
 				log.Printf("info: %s がいる %s は今、白夜です", bot.Name, bot.getLocStr(false))
 				if !firstLaunch {
-					toot := mastodon.Toot{Status: bot.getLocStr(false) + "は、いま１日でいちばん暗い時間" + bot.Assertion + "。でも白夜だから寝ないの" + bot.Assertion + "よ"}
-					if err := bot.post(ctx, toot); err != nil {
-						log.Printf("info: %s がトゥートできませんでした。今回は諦めます……", bot.Name)
-					}
+					go func() {
+						toot := mastodon.Toot{Status: bot.getLocStr(false) + "は、いま１日でいちばん暗い時間" + bot.Assertion + "。でも白夜だから寝ないの" + bot.Assertion + "よ"}
+						if err := bot.post(ctx, toot); err != nil {
+							log.Printf("info: %s がトゥートできませんでした。今回は諦めます……", bot.Name)
+						}
+					}()
 				}
 			case "極夜":
 				log.Printf("info: %s がいる %s は今、極夜です", bot.Name, bot.getLocStr(false))
 				if !firstLaunch {
-					toot := mastodon.Toot{Status: bot.getLocStr(false) + "は、いま１日でいちばん明るい時間" + bot.Assertion + "。でも極夜だから起きないの" + bot.Assertion + "よ💤……"}
-					if err := bot.post(ctx, toot); err != nil {
-						log.Printf("info: %s がトゥートできませんでした。今回は諦めます……", bot.Name)
-					}
+					go func() {
+						toot := mastodon.Toot{Status: bot.getLocStr(false) + "は、いま１日でいちばん明るい時間" + bot.Assertion + "。でも極夜だから起きないの" + bot.Assertion + "よ💤……"}
+						if err := bot.post(ctx, toot); err != nil {
+							log.Printf("info: %s がトゥートできませんでした。今回は諦めます……", bot.Name)
+						}
+					}()
 				}
 			default:
 				log.Printf("info: %s にいる %s の起床までの時間：%s", bot.getLocStr(true), bot.Name, sleep)
