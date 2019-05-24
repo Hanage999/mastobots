@@ -111,6 +111,8 @@ func (result proseResult) contain(str string) bool {
 
 // parseは、テキストを形態素解析した結果を返す。
 func parse(text string) (result parseResult, err error) {
+	mutex.Lock()
+	defer mutex.Unlock()
 	if text == "" {
 		err = errors.New("解析する文字列が空です")
 		log.Printf("info: %s", err)
@@ -136,8 +138,6 @@ func parse(text string) (result parseResult, err error) {
 
 // parseEnglish は、英語のテキストをproseで形態素解析して結果を返す。
 func parseEnglish(text string) (proseResult, error) {
-	mutex.Lock()
-	defer mutex.Unlock()
 	var tks []prose.Token
 	var etts []prose.Entity
 
