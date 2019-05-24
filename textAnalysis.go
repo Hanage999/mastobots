@@ -7,11 +7,14 @@ import (
 	"math/rand"
 	"os/exec"
 	"strings"
+	"sync"
 	"unicode"
 
 	"golang.org/x/net/html"
 	"gopkg.in/jdkato/prose.v2"
 )
+
+var mutex sync.Mutex
 
 // parseResultはテキストの形態素解析結果のインターフェースを提供する。
 type parseResult interface {
@@ -133,6 +136,8 @@ func parse(text string) (result parseResult, err error) {
 
 // parseEnglish は、英語のテキストをproseで形態素解析して結果を返す。
 func parseEnglish(text string) (proseResult, error) {
+	mutex.Lock()
+	defer mutex.Unlock()
 	var tks []prose.Token
 	var etts []prose.Entity
 

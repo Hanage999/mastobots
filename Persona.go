@@ -123,10 +123,12 @@ func (bot *Persona) daylife(ctx context.Context, db *DB, sleep time.Duration, ac
 		t := time.NewTimer(sleep)
 		defer t.Stop()
 		if !firstLaunch && active > 0 {
-			toot := mastodon.Toot{Status: sleepWithSun + "おやすみなさい" + bot.Assertion + "💤……"}
-			if err := bot.post(ctx, toot); err != nil {
-				log.Printf("info: %s がトゥートできませんでした。今回は諦めます……", bot.Name)
-			}
+			go func() {
+				toot := mastodon.Toot{Status: sleepWithSun + "おやすみなさい" + bot.Assertion + "💤……"}
+				if err := bot.post(ctx, toot); err != nil {
+					log.Printf("info: %s がトゥートできませんでした。今回は諦めます……", bot.Name)
+				}
+			}()
 		}
 	LOOP:
 		for {
