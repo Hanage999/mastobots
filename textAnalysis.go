@@ -119,21 +119,22 @@ func parse(text string) (result parseResult, err error) {
 		return
 	}
 
-	jap := false
-	for _, r := range text {
-		if unicode.In(r, unicode.Hiragana, unicode.Katakana) {
-			jap = true
-			break
-		}
-	}
-
-	if jap {
+	if isJap(text) {
 		result, err = parseJapanese(text)
 	} else {
 		result, err = parseEnglish(text)
 	}
 
 	return
+}
+
+func isJap(text string) bool {
+	for _, r := range text {
+		if unicode.In(r, unicode.Hiragana, unicode.Katakana) {
+			return true
+		}
+	}
+	return false
 }
 
 // parseEnglish は、英語のテキストをproseで形態素解析して結果を返す。

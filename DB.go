@@ -90,9 +90,11 @@ func (db *DB) deleteOldCandidates(bot *Persona) (err error) {
 			bot_id = ? AND id not in (
 				SELECT * FROM (
 					SELECT id FROM candidates
+					WHERE bot_id = ?
 					ORDER BY updated_at DESC limit ?
 				) v
 			)`,
+		bot.DBID,
 		bot.DBID,
 		bot.ItemPool,
 	)
