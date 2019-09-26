@@ -159,9 +159,7 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 	rows.Close()
 
 	// 結果から、興味のある物件を収集
-	t := time.Now()
-	const layout = "01-02 15:04:05"
-	log.Printf("info: %s が、%s に %d 件のアイテムを見始めました", bot.Name, t.Format(layout), len(items))
+	tb := time.Now()
 
 	myItems := make([]Item, 0)
 	for _, item := range items {
@@ -211,8 +209,9 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 		}
 	}
 
-	t = time.Now()
-	log.Printf("info: %s が、%s に %d 件のアイテムを見終わりました", bot.Name, t.Format(layout), len(items))
+	tf := time.Now()
+	const layout = "01-02 15:04:05"
+	log.Printf("info: %s が、%s に見始めた %d 件のアイテムを %s に見終わりました", bot.Name, tb.Format(layout), len(items), tf.Format(layout))
 
 	// botsテーブルのchecked_untilを更新
 	if len(items) == 0 {
