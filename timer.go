@@ -21,13 +21,13 @@ func tickAfterWait(ctx context.Context, wait time.Duration, itvl time.Duration) 
 		}
 
 		tk := time.NewTicker(itvl)
-		defer tk.Stop()
 
 		for {
 			select {
 			case <-tk.C:
 				ch <- "routine tick"
 			case <-ctx.Done():
+				tk.Stop()
 				return
 			}
 		}

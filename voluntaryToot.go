@@ -31,7 +31,11 @@ func (bot *Persona) periodicToot(ctx context.Context, db *DB) {
 LOOP:
 	for {
 		select {
-		case <-tc:
+		case _, ok := <-tc:
+			if !ok {
+				log.Printf("info: %s が今日の定期トゥートを終了しました", bot.Name)
+				break LOOP
+			}
 			go func() {
 				if err := db.deleteOldCandidates(bot); err != nil {
 					log.Printf("info :%s が古いトゥート候補の削除に失敗しました", bot.Name)
@@ -56,9 +60,6 @@ LOOP:
 					}
 				}
 			}()
-		case <-ctx.Done():
-			log.Printf("info: %s が今日の定期トゥートを終了しました", bot.Name)
-			break LOOP
 		}
 	}
 }
