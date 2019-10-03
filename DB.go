@@ -211,7 +211,7 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 
 	tf := time.Now()
 	const layout = "01-02 15:04:05"
-	log.Printf("info: %s が、%s に見始めた %d 件のアイテムを %s に見終わりました", bot.Name, tb.Format(layout), len(items), tf.Format(layout))
+	log.Printf("trace: %s が、%s に見始めた %d 件のアイテムを %s に見終わりました", bot.Name, tb.Format(layout), len(items), tf.Format(layout))
 
 	// botsテーブルのchecked_untilを更新
 	if len(items) == 0 {
