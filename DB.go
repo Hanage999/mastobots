@@ -159,6 +159,8 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 	rows.Close()
 
 	// 結果から、興味のある物件を収集
+	tb := time.Now()
+
 	myItems := make([]Item, 0)
 	for _, item := range items {
 		sumStr := item.Title
@@ -206,6 +208,10 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 			return
 		}
 	}
+
+	tf := time.Now()
+	const layout = "01-02 15:04:05"
+	log.Printf("trace: %s が、%s に見始めた %d 件のアイテムを %s に見終わりました", bot.Name, tb.Format(layout), len(items), tf.Format(layout))
 
 	// botsテーブルのchecked_untilを更新
 	if len(items) == 0 {

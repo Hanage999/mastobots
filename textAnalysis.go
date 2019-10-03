@@ -111,8 +111,6 @@ func (result proseResult) contain(str string) bool {
 
 // parseは、テキストを形態素解析した結果を返す。
 func parse(text string) (result parseResult, err error) {
-	mutex.Lock()
-	defer mutex.Unlock()
 	if text == "" {
 		err = errors.New("解析する文字列が空です")
 		log.Printf("info: %s", err)
@@ -139,6 +137,9 @@ func isJap(text string) bool {
 
 // parseEnglish は、英語のテキストをproseで形態素解析して結果を返す。
 func parseEnglish(text string) (proseResult, error) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
 	var tks []prose.Token
 	var etts []prose.Entity
 
@@ -158,6 +159,9 @@ func parseEnglish(text string) (proseResult, error) {
 
 // parseJapanese は、日本語のテキストをJuman++で形態素解析して結果を返す。
 func parseJapanese(text string) (result jumanResult, err error) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
 	// 改行のない長文はJumanppに食わせるとエラーになるので、句点で強制改行
 	safeStr := strings.Replace(text, "。\n", "。", -1)
 	safeStr = strings.Replace(safeStr, "。", "。\n", -1)
