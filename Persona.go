@@ -100,8 +100,8 @@ func (bot *Persona) spawn(ctx context.Context, db *DB, firstLaunch bool) {
 					}()
 				}
 			default:
-				log.Printf("info: %s にいる %s の起床までの時間：%s", bot.getLocStr(true), bot.Name, sleep)
-				log.Printf("info: %s にいる %s の活動時間：%s", bot.getLocStr(true), bot.Name, active)
+				log.Printf("info: %s の所在地、起床までの時間、起床後の活動時間：", bot.Name)
+				log.Printf("info: 　%s、%s、%s", bot.getLocStr(true), sleep, active)
 			}
 		} else {
 			log.Printf("info: %s の生活サイクルが太陽の出没から決められませんでした。デフォルトの起居時刻を使います：%s", bot.Name, err)
