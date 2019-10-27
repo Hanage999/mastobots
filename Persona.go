@@ -71,7 +71,7 @@ func initPersona(apps []*MastoApp, bot *Persona) (err error) {
 }
 
 // spawn は、botの活動を開始する
-func (bot *Persona) spawn(ctx context.Context, db *DB, firstLaunch bool) {
+func (bot *Persona) spawn(ctx context.Context, db DB, firstLaunch bool) {
 	sleep, active := getDayCycle(bot.WakeHour, bot.WakeMin, bot.SleepHour, bot.SleepMin)
 
 	if bot.LivesWithSun {
@@ -112,7 +112,7 @@ func (bot *Persona) spawn(ctx context.Context, db *DB, firstLaunch bool) {
 }
 
 // daylife は、botの活動サイクルを作る
-func (bot *Persona) daylife(ctx context.Context, db *DB, sleep time.Duration, active time.Duration, firstLaunch bool) {
+func (bot *Persona) daylife(ctx context.Context, db DB, sleep time.Duration, active time.Duration, firstLaunch bool) {
 	wakeWithSun, sleepWithSun := "", ""
 	if bot.LivesWithSun {
 		wakeWithSun = "そろそろ明るくなってきた" + bot.Assertion + "ね。" + bot.getLocStr(false) + "から"
@@ -171,7 +171,7 @@ func (bot *Persona) daylife(ctx context.Context, db *DB, sleep time.Duration, ac
 }
 
 // activities は、botの活動の全てを実行する
-func (bot *Persona) activities(ctx context.Context, db *DB) {
+func (bot *Persona) activities(ctx context.Context, db DB) {
 	go bot.periodicToot(ctx, db)
 	go bot.monitor(ctx)
 }

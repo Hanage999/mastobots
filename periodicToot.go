@@ -12,7 +12,7 @@ import (
 )
 
 // periodicTootは、指定された時刻（分）を皮切りに一定時間ごとにトゥートする。
-func (bot *Persona) periodicToot(ctx context.Context, db *DB) {
+func (bot *Persona) periodicToot(ctx context.Context, db DB) {
 	itvl := time.Duration(bot.Interval) * time.Minute
 
 	// 起動後最初のトゥートまでの待機時間を、Intervalより短くする
@@ -65,7 +65,7 @@ LOOP:
 }
 
 // createNewsTootはトゥートする内容を作成する。
-func (bot *Persona) createNewsToot(db *DB) (toot mastodon.Toot, item Item, err error) {
+func (bot *Persona) createNewsToot(db DB) (toot mastodon.Toot, item Item, err error) {
 	// たまった候補からランダムに一つ選ぶ
 	item, err = db.pickItem(bot)
 	if err != nil {

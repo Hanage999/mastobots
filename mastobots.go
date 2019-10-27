@@ -22,7 +22,7 @@ var (
 )
 
 // Initialize は、config.ymlに従ってbotとデータベース接続を初期化する。
-func Initialize() (bots []*Persona, db *DB, err error) {
+func Initialize() (bots []*Persona, db DB, err error) {
 	// colog 設定
 	if version == "" {
 		colog.SetDefaultLevel(colog.LDebug)
@@ -46,7 +46,7 @@ func Initialize() (bots []*Persona, db *DB, err error) {
 		_, err := exec.LookPath(cmd)
 		if err != nil {
 			log.Printf("alert: %s がインストールされていません！", cmd)
-			return nil, nil, err
+			return nil, db, err
 		}
 	}
 
@@ -67,7 +67,7 @@ func Initialize() (bots []*Persona, db *DB, err error) {
 	conf.SetConfigType("yaml")
 	if err := conf.ReadInConfig(); err != nil {
 		log.Printf("alert: 設定ファイルが読み込めませんでした")
-		return nil, nil, err
+		return nil, db, err
 	}
 	appName = conf.GetString("MastoAppName")
 	openCageKey = conf.GetString("OpenCageKey")
@@ -78,7 +78,7 @@ func Initialize() (bots []*Persona, db *DB, err error) {
 	file, err := os.OpenFile("apps.yml", os.O_CREATE, 0666)
 	if err != nil {
 		log.Printf("alert: アプリ設定ファイルが作成できませんでした")
-		return nil, nil, err
+		return nil, db, err
 	}
 	file.Close()
 	appConf := viper.New()
@@ -87,7 +87,7 @@ func Initialize() (bots []*Persona, db *DB, err error) {
 	appConf.SetConfigType("yaml")
 	if err := appConf.ReadInConfig(); err != nil {
 		log.Printf("alert: アプリ設定ファイルが読み込めませんでした")
-		return nil, nil, err
+		return nil, db, err
 	}
 	appConf.UnmarshalKey("MastoApps", &apps)
 
@@ -97,7 +97,7 @@ func Initialize() (bots []*Persona, db *DB, err error) {
 		updatedApps, err := initMastoApps(apps, appName, bot.Instance)
 		if err != nil {
 			log.Printf("alert: %s のためのアプリを登録できませんでした", bot.Instance)
-			return nil, nil, err
+			return nil, db, err
 		}
 		if len(updatedApps) > 0 {
 			apps = updatedApps
@@ -108,7 +108,7 @@ func Initialize() (bots []*Persona, db *DB, err error) {
 		appConf.Set("MastoApps", apps)
 		if err := appConf.WriteConfig(); err != nil {
 			log.Printf("alert: アプリ設定ファイルが書き込めませんでした：%s", err)
-			return nil, nil, err
+			return nil, db, err
 		}
 		log.Printf("info: 設定ファイルを更新しました")
 	}
@@ -117,7 +117,7 @@ func Initialize() (bots []*Persona, db *DB, err error) {
 	for _, bot := range bots {
 		if err := initPersona(apps, bot); err != nil {
 			log.Printf("alert: %s を初期化できませんでした", bot.Name)
-			return nil, nil, err
+			return nil, db, err
 		}
 	}
 
@@ -125,13 +125,13 @@ func Initialize() (bots []*Persona, db *DB, err error) {
 	db, err = newDB(cr)
 	if err != nil {
 		log.Printf("alert: データベースへの接続が確保できませんでした")
-		return nil, nil, err
+		return nil, db, err
 	}
 
 	// botがまだデータベースに登録されていなかったら登録
 	if err = db.addNewBots(bots); err != nil {
 		log.Printf("alert: データベースにbotが登録できませんでした")
-		return nil, nil, err
+		return nil, db, err
 	}
 
 	// botのデータベース上のIDを取得
@@ -139,7 +139,7 @@ func Initialize() (bots []*Persona, db *DB, err error) {
 		id, err := db.botID(bot)
 		if err != nil {
 			log.Printf("alert: botのデータベース上のIDが取得できませんでした")
-			return nil, nil, err
+			return nil, db, err
 		}
 		bot.DBID = id
 	}
@@ -148,7 +148,7 @@ func Initialize() (bots []*Persona, db *DB, err error) {
 }
 
 // ActivateBots は、botたちを活動させる。
-func ActivateBots(bots []*Persona, db *DB, p int) (err error) {
+func ActivateBots(bots []*Persona, db DB, p int) (err error) {
 	// 全てをシャットダウンするタイムアウトの設定
 	ctx := context.Background()
 	var cancel context.CancelFunc
