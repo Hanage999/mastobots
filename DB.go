@@ -27,7 +27,7 @@ type Item struct {
 }
 
 // newDBは、新たなデータベース接続を作成する。
-func newDB(cr map[string]string) (db *DB, err error) {
+func newDB(cr map[string]string) (db DB, err error) {
 	dbase, err := sql.Open("mysql", cr["user"]+":"+
 		cr["password"]+
 		"@tcp("+cr["Server"]+")/"+
@@ -44,12 +44,12 @@ func newDB(cr map[string]string) (db *DB, err error) {
 		return db, err
 	}
 
-	db = &DB{dbase}
+	db = DB{dbase}
 	return
 }
 
 // addNewBotsは、もし新しいbotがいたらデータベースに登録する。
-func (db *DB) addNewBots(bots []*Persona) (err error) {
+func (db DB) addNewBots(bots []*Persona) (err error) {
 	vsts := make([]string, 0)
 	params := make([]interface{}, 0)
 	now := time.Now()
@@ -83,7 +83,7 @@ func (db *DB) addNewBots(bots []*Persona) (err error) {
 }
 
 // deleteOldCandidates は、多すぎるトゥート候補を古いものから削除する
-func (db *DB) deleteOldCandidates(bot *Persona) (err error) {
+func (db DB) deleteOldCandidates(bot *Persona) (err error) {
 	_, err = db.Exec(`
 		DELETE FROM candidates
 		WHERE
@@ -105,7 +105,7 @@ func (db *DB) deleteOldCandidates(bot *Persona) (err error) {
 }
 
 // stockItemsは、新規RSSアイテムの中からbotが興味を持ったitemをストックする。
-func (db *DB) stockItems(bot *Persona) (err error) {
+func (db DB) stockItems(bot *Persona) (err error) {
 	// botの情報を取得
 	var checkedUntil int
 	if err := db.QueryRow(`
@@ -233,7 +233,7 @@ func (db *DB) stockItems(bot *Persona) (err error) {
 }
 
 // pickItemは、candidateから一件のitemをランダムで選択する。
-func (db *DB) pickItem(bot *Persona) (item Item, err error) {
+func (db DB) pickItem(bot *Persona) (item Item, err error) {
 	// candidates, itemsテーブルから新規itemを取得
 	rows, err := db.Query(`
 		SELECT
@@ -290,7 +290,7 @@ func (db *DB) pickItem(bot *Persona) (item Item, err error) {
 }
 
 // botIDは、botのデータベース上のIDを取得する。
-func (db *DB) botID(bot *Persona) (id int, err error) {
+func (db DB) botID(bot *Persona) (id int, err error) {
 	if err = db.QueryRow(`
 		SELECT
 			id
@@ -307,7 +307,7 @@ func (db *DB) botID(bot *Persona) (id int, err error) {
 }
 
 // deleteItemは、candidatesから一件を削除する。
-func (db *DB) deleteItem(bot *Persona, item Item) (err error) {
+func (db DB) deleteItem(bot *Persona, item Item) (err error) {
 	_, err = db.Exec(`
 		DELETE FROM
 			candidates
