@@ -91,12 +91,19 @@ func (bot *Persona) respondToUpdate(ctx context.Context, ev *mastodon.UpdateEven
 		return
 	}
 
-	// キーワードを検知したらふぁぼる
+	// キーワードを検知したらふぁぼる。同じ鯖のbotならブースト＋引用コメントする
 	for _, w := range bot.Keywords {
 		if result.contain(w) {
 			if err = bot.fav(ctx, ev.Status.ID); err != nil {
 				log.Printf("info: %s がふぁぼを諦めました", bot.Name)
-				return
+			}
+			if !strings.Contains(ev.Status.Account.Acct, "@") && ev.Status.Account.Bot {
+				if err = bot.boost(ctx, ev.Status.ID); err != nil {
+					log.Printf("info: %s がブーストを諦めました", bot.Name)
+				}
+				if err = bot.quoteComment(ctx, result, ev.Status.URL); err != nil {
+					log.Printf("info: %s が引用＋コメントを諦めました", bot.Name)
+				}
 			}
 			break
 		}

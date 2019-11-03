@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"math/rand"
+	"strings"
 	"time"
 
 	mastodon "github.com/mattn/go-mastodon"
@@ -191,6 +192,54 @@ func (bot *Persona) post(ctx context.Context, toot mastodon.Toot) (err error) {
 	return
 }
 
+// quoteCommentは、トゥートを引用コメントする
+func (bot *Persona) quoteComment(ctx context.Context, result parseResult, url string) (err error) {
+	msg, err := bot.messageFromParseResult(result, url)
+	if err != nil || msg == "" {
+		log.Printf("info: %s が引用コメントを作成できませんでした", bot.Name)
+		return
+	}
+
+	toot := mastodon.Toot{Status: msg}
+	if err := bot.post(ctx, toot); err != nil {
+		log.Printf("info: %s が引用コメントできませんでした。今回は諦めます……", bot.Name)
+	}
+
+	return
+}
+
+// messageFromParseResultは、パース結果とURLから投稿文を作成する。
+func (bot *Persona) messageFromParseResult(result parseResult, url string) (msg string, err error) {
+	// トゥートに使う単語の選定
+	cds := result.candidates()
+	best, err := bestCandidate(cds)
+	if err != nil {
+		log.Printf("info: %s が引用コメントの単語選定に失敗しました", bot.Name)
+		return
+	}
+
+	// ハッシュタグ生成
+	var hashtagStr string
+	for _, t := range bot.Hashtags {
+		hashtagStr += `#` + t + " "
+	}
+	hashtagStr = strings.TrimSpace(hashtagStr)
+
+	// コメントの生成
+	idx := 0
+	if len(bot.Comments) > 1 {
+		idx = rand.Intn(len(bot.Comments))
+	}
+	msg = bot.Comments[idx]
+	msg = strings.Replace(msg, "_keyword1_", best.surface, -1)
+	msg = strings.Replace(msg, "_topkana1_", best.firstKana, -1)
+
+	// リンクとハッシュタグを追加
+	msg += "\n\n" + url + "\n\n" + hashtagStr
+	log.Printf("trace: %s のトゥート内容：\n\n%s", bot.Name, msg)
+	return
+}
+
 // favは、ステータスをふぁぼる。失敗したらmaxRetryを上限に再試行する。
 func (bot *Persona) fav(ctx context.Context, id mastodon.ID) (err error) {
 	time.Sleep(time.Duration(rand.Intn(2000)+1000) * time.Millisecond)
@@ -203,6 +252,22 @@ func (bot *Persona) fav(ctx context.Context, id mastodon.ID) (err error) {
 		}
 		break
 	}
+	return
+}
+
+// boostは、ステータスをブーストする。失敗したらmaxRetryを上限に再試行する。
+func (bot *Persona) boost(ctx context.Context, id mastodon.ID) (err error) {
+	time.Sleep(time.Duration(rand.Intn(2000)+1000) * time.Millisecond)
+	for i := 0; i < maxRetry; i++ {
+		_, err = bot.Client.Reblog(ctx, id)
+		if err != nil {
+			time.Sleep(retryInterval)
+			log.Printf("info: %s がブーストできませんでした。リトライします。：%s\n", bot.Name, err)
+			continue
+		}
+		break
+	}
+
 	return
 }
 
