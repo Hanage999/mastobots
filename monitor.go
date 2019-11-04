@@ -101,13 +101,65 @@ func (bot *Persona) respondToUpdate(ctx context.Context, ev *mastodon.UpdateEven
 				if err = bot.boost(ctx, ev.Status.ID); err != nil {
 					log.Printf("info: %s がブーストを諦めました", bot.Name)
 				}
-				if err = bot.quoteComment(ctx, result, ev.Status.URL); err != nil {
+				originalURL := ev.Status.URL
+				if ev.Status.Reblog != nil {
+					originalURL = ev.Status.Reblog.URL
+				}
+				if err = bot.quoteComment(ctx, result, originalURL); err != nil {
 					log.Printf("info: %s が引用＋コメントを諦めました", bot.Name)
 				}
 			}
 			break
 		}
 	}
+	return
+}
+
+// quoteCommentは、トゥートを引用コメントする
+func (bot *Persona) quoteComment(ctx context.Context, result parseResult, url string) (err error) {
+	msg, err := bot.messageFromParseResult(result, url)
+	if err != nil || msg == "" {
+		log.Printf("info: %s が引用コメントを作成できませんでした", bot.Name)
+		return
+	}
+
+	toot := mastodon.Toot{Status: msg}
+	if err := bot.post(ctx, toot); err != nil {
+		log.Printf("info: %s が引用コメントできませんでした。今回は諦めます……", bot.Name)
+	}
+
+	return
+}
+
+// messageFromParseResultは、パース結果とURLから投稿文を作成する。
+func (bot *Persona) messageFromParseResult(result parseResult, url string) (msg string, err error) {
+	// トゥートに使う単語の選定
+	cds := result.candidates()
+	best, err := bestCandidate(cds)
+	if err != nil {
+		log.Printf("info: %s が引用コメントの単語選定に失敗しました", bot.Name)
+		return
+	}
+
+	// ハッシュタグ生成
+	var hashtagStr string
+	for _, t := range bot.Hashtags {
+		hashtagStr += `#` + t + " "
+	}
+	hashtagStr = strings.TrimSpace(hashtagStr)
+
+	// コメントの生成
+	idx := 0
+	if len(bot.Comments) > 1 {
+		idx = rand.Intn(len(bot.Comments))
+	}
+	msg = bot.Comments[idx]
+	msg = strings.Replace(msg, "_keyword1_", best.surface, -1)
+	msg = strings.Replace(msg, "_topkana1_", best.firstKana, -1)
+
+	// リンクとハッシュタグを追加
+	msg += "\n\n" + url + "\n\n" + hashtagStr
+	log.Printf("trace: %s のトゥート内容：\n\n%s", bot.Name, msg)
 	return
 }
 

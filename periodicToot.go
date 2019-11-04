@@ -104,7 +104,7 @@ func (bot *Persona) messageFromItem(item Item) (msg string, err error) {
 	rep = regexp.MustCompile(`(http(s)?:\/\/)?([\w\-]+\.)+[\w-]+(\/[\w\- .\/?%&=]*)?`)
 	txt = rep.ReplaceAllString(txt, " ")
 
-	log.Printf("trace: id %d Jumanに食わせるcontent：%s", item.ID, txt)
+	log.Printf("trace: id %d 形態素解析に食わせるcontent：%s", item.ID, txt)
 
 	result, err := parse(txt)
 	if err != nil {
