@@ -208,7 +208,7 @@ func (bot *Persona) fav(ctx context.Context, id mastodon.ID) (err error) {
 
 // boostは、ステータスをブーストする。失敗したらmaxRetryを上限に再試行する。
 func (bot *Persona) boost(ctx context.Context, id mastodon.ID) (err error) {
-	time.Sleep(time.Duration(rand.Intn(2000)+1000) * time.Millisecond)
+	time.Sleep(time.Duration(rand.Intn(5000)+3000) * time.Millisecond)
 	for i := 0; i < maxRetry; i++ {
 		_, err = bot.Client.Reblog(ctx, id)
 		if err != nil {
