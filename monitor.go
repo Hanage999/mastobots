@@ -71,18 +71,25 @@ func (bot *Persona) openStreaming(ctx context.Context) (evch chan mastodon.Event
 
 // respondToUpdateは、statusに反応する。
 func (bot *Persona) respondToUpdate(ctx context.Context, ev *mastodon.UpdateEvent) (err error) {
-	// メンションは無視
-	if len(ev.Status.Mentions) != 0 {
+	orig := ev.Status
+	rebl := false
+	if orig.Reblog != nil {
+		orig = orig.Reblog
+		rebl = true
+	}
+
+	// メンションは無視（ブーストされたのものは見る）
+	if len(ev.Status.Mentions) != 0 && !rebl {
 		return
 	}
 
 	// 自分のトゥートは無視
-	if ev.Status.Account.ID == bot.MyID {
+	if orig.Account.ID == bot.MyID {
 		return
 	}
 
 	// トゥートを形態素解析
-	text := textContent(ev.Status.Content)
+	text := textContent(orig.Content)
 	if text == "" {
 		return
 	}
@@ -101,11 +108,7 @@ func (bot *Persona) respondToUpdate(ctx context.Context, ev *mastodon.UpdateEven
 				if err = bot.boost(ctx, ev.Status.ID); err != nil {
 					log.Printf("info: %s がブーストを諦めました", bot.Name)
 				}
-				originalURL := ev.Status.URL
-				if ev.Status.Reblog != nil {
-					originalURL = ev.Status.Reblog.URL
-				}
-				if err = bot.quoteComment(ctx, result, originalURL); err != nil {
+				if err = bot.quoteComment(ctx, result, orig.URL); err != nil {
 					log.Printf("info: %s が引用＋コメントを諦めました", bot.Name)
 				}
 			}
