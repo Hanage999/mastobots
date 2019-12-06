@@ -36,6 +36,9 @@ Personae:   # 各botの情報
         Comments:       # トゥート本文を列挙
             - _keyword1_は最高             # "_keyword1_" は、RSSアイテムの中から適当に拾った名詞で置換される。
             - _topkana1_、_keyword1_ですか  # "_topkana1_" は、その名詞の最初の読みがなに置換される。
+        RandomFrequency: 0  # 24時間あたり約何回ランダムトゥートさせるか。0でランダムトゥートしない。
+        RandomToots:    # ランダムなタイミングでトゥートさせる内容
+            -
 
     -   Name: mybot2
         Instance: https://example.com
@@ -63,3 +66,6 @@ Personae:   # 各botの情報
         Comments:
             - _keyword1_はねえ……
             - _topkana1_、_keyword1_ナリか
+        RandomFrequency: 0
+        RandomToots:
+            -

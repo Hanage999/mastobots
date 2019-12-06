@@ -11,31 +11,33 @@ import (
 
 // Persona は、botの属性を格納する。
 type Persona struct {
-	Name         string
-	Instance     string
-	MyApp        *MastoApp
-	Email        string
-	Password     string
-	Client       *mastodon.Client
-	MyID         mastodon.ID
-	Title        string
-	Starter      string
-	Assertion    string
-	FirstFire    int
-	Interval     int
-	ItemPool     int
-	Hashtags     []string
-	Keywords     []string
-	Comments     []string
-	DBID         int
-	WakeHour     int
-	WakeMin      int
-	SleepHour    int
-	SleepMin     int
-	LivesWithSun bool
-	Latitude     float64
-	Longitude    float64
-	LocInfo      OCResult
+	Name            string
+	Instance        string
+	MyApp           *MastoApp
+	Email           string
+	Password        string
+	Client          *mastodon.Client
+	MyID            mastodon.ID
+	Title           string
+	Starter         string
+	Assertion       string
+	FirstFire       int
+	Interval        int
+	ItemPool        int
+	Hashtags        []string
+	Keywords        []string
+	Comments        []string
+	DBID            int
+	WakeHour        int
+	WakeMin         int
+	SleepHour       int
+	SleepMin        int
+	LivesWithSun    bool
+	Latitude        float64
+	Longitude       float64
+	LocInfo         OCResult
+	RandomToots     []string
+	RandomFrequency int
 }
 
 // initPersonaは、botとインスタンスの接続を確立する。
@@ -174,6 +176,9 @@ func (bot *Persona) daylife(ctx context.Context, db DB, sleep time.Duration, act
 func (bot *Persona) activities(ctx context.Context, db DB) {
 	go bot.periodicToot(ctx, db)
 	go bot.monitor(ctx)
+	if len(bot.RandomToots) > 0 && bot.RandomFrequency > 0 {
+		go bot.randomToot(ctx)
+	}
 }
 
 // postはトゥートを投稿する。失敗したらmaxRetryを上限に再試行する。
