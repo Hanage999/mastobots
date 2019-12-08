@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"math/rand"
-	"strings"
 	"time"
 
 	mastodon "github.com/mattn/go-mastodon"
@@ -39,10 +38,7 @@ func (bot *Persona) randomToot(ctx context.Context) {
 
 // nuance は、投稿にニュアンスを添えたり添えなかったりする。
 func nuance() (s string) {
-	if rand.Intn(2) == 0 {
-		s = strings.Repeat("…", rand.Intn(4))
-	} else {
-		s = strings.Repeat("！", rand.Intn(6))
-	}
+	gb := [...]string{"", "？", "?!", "!?", "！", "！！", "！！！", "！！！！", "！！！！！", "…", "……", "………", "w", "www", "…？", "…！", "…?!", "…?!", "…w", "……w", "………w"}
+	s = gb[rand.Intn(len(gb))]
 	return
 }
