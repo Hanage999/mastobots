@@ -144,13 +144,6 @@ func (bot *Persona) messageFromParseResult(result parseResult, url string) (msg 
 		return
 	}
 
-	// ハッシュタグ生成
-	var hashtagStr string
-	for _, t := range bot.Hashtags {
-		hashtagStr += `#` + t + " "
-	}
-	hashtagStr = strings.TrimSpace(hashtagStr)
-
 	// コメントの生成
 	idx := 0
 	if len(bot.Comments) > 1 {
@@ -160,8 +153,8 @@ func (bot *Persona) messageFromParseResult(result parseResult, url string) (msg 
 	msg = strings.Replace(msg, "_keyword1_", best.surface, -1)
 	msg = strings.Replace(msg, "_topkana1_", best.firstKana, -1)
 
-	// リンクとハッシュタグを追加
-	msg += "\n\n" + url + "\n\n" + hashtagStr
+	// リンクを追加
+	msg += "\n\n" + url
 	log.Printf("trace: %s のトゥート内容：\n\n%s", bot.Name, msg)
 	return
 }
