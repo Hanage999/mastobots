@@ -15,11 +15,10 @@ func (bot *Persona) randomToot(ctx context.Context) {
 	ft := bt - bt*2/3 + rand.Intn(bt*4/3)
 	itvl := time.Duration(ft) * time.Minute
 
-	newCtx, cancel := context.WithTimeout(ctx, itvl)
-	defer cancel()
+	t := time.NewTimer(itvl)
 
 	select {
-	case <-newCtx.Done():
+	case <-t.C:
 		idx := rand.Intn(len(bot.RandomToots))
 		msg := bot.RandomToots[idx]
 		if msg != "" {
@@ -27,12 +26,12 @@ func (bot *Persona) randomToot(ctx context.Context) {
 			toot := mastodon.Toot{Status: msg}
 			if err := bot.post(ctx, toot); err != nil {
 				log.Printf("info: %s がランダムな呟きに失敗しました", bot.Name)
-				return
 			}
 		}
 
 		bot.randomToot(ctx)
 	case <-ctx.Done():
+		t.Stop()
 	}
 }
 
