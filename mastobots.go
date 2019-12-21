@@ -171,7 +171,7 @@ func ActivateBots(bots []*Persona, db DB, p int) (err error) {
 				return
 			}
 		}
-		go bot.spawn(ctx, db, true)
+		go bot.spawn(ctx, db, true, false)
 	}
 
 	<-ctx.Done()

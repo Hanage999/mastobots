@@ -55,20 +55,20 @@ func getLocationCodes() (results map[string]interface{}, err error) {
 
 	res, err := http.Get(url)
 	if err != nil {
-		log.Printf("%s へのリクエストに失敗しました：%s", url, err)
+		log.Printf("info: %s へのリクエストに失敗しました：%s", url, err)
 		return
 	}
 	defer res.Body.Close()
 
 	if code := res.StatusCode; code >= 400 {
-		err = fmt.Errorf("%s への接続エラーです(%d)", url, code)
+		err = fmt.Errorf("info: %s への接続エラーです(%d)", url, code)
 		log.Printf("info: %s\n", err)
 		return
 	}
 
 	doc, err := html.Parse(res.Body)
 	if err != nil {
-		log.Printf("%s のパースに失敗しました：%s", url, err)
+		log.Printf("info: %s のパースに失敗しました：%s", url, err)
 		return
 	}
 
@@ -108,7 +108,7 @@ func GetRandomWeather(when int) (data WeatherData, err error) {
 
 	res, err := http.Get(url)
 	if err != nil {
-		log.Printf("天気予報サイトへのリクエストに失敗しました：%s", err)
+		log.Printf("info: 天気予報サイトへのリクエストに失敗しました：%s", err)
 		return
 	}
 

@@ -58,13 +58,13 @@ func initPersona(apps []*MastoApp, bot *Persona) (err error) {
 
 	err = bot.Client.Authenticate(ctx, bot.Email, bot.Password)
 	if err != nil {
-		log.Printf("%s がアクセストークンの取得に失敗しました：%s", bot.Name, err)
+		log.Printf("alert: %s がアクセストークンの取得に失敗しました：%s", bot.Name, err)
 		return
 	}
 
 	acc, err := bot.Client.GetAccountCurrentUser(ctx)
 	if err != nil {
-		log.Printf("%s のアカウントIDが取得できませんでした：%s", bot.Name, err)
+		log.Printf("alert: %s のアカウントIDが取得できませんでした：%s", bot.Name, err)
 		return
 	}
 	bot.MyID = acc.ID
@@ -73,7 +73,7 @@ func initPersona(apps []*MastoApp, bot *Persona) (err error) {
 }
 
 // spawn は、botの活動を開始する
-func (bot *Persona) spawn(ctx context.Context, db DB, firstLaunch bool) {
+func (bot *Persona) spawn(ctx context.Context, db DB, firstLaunch bool, continuingPolarNight bool) {
 	sleep, active := getDayCycle(bot.WakeHour, bot.WakeMin, bot.SleepHour, bot.SleepMin)
 
 	if bot.LivesWithSun {
@@ -93,7 +93,7 @@ func (bot *Persona) spawn(ctx context.Context, db DB, firstLaunch bool) {
 				}
 			case "極夜":
 				log.Printf("info: %s がいる %s は今、極夜です", bot.Name, bot.getLocStr(false))
-				if !firstLaunch {
+				if !firstLaunch && continuingPolarNight {
 					go func() {
 						toot := mastodon.Toot{Status: bot.getLocStr(false) + "は、いま１日でいちばん明るい時間" + bot.Assertion + "。でも極夜だから起きないの" + bot.Assertion + "よ💤……"}
 						if err := bot.post(ctx, toot); err != nil {
@@ -110,11 +110,11 @@ func (bot *Persona) spawn(ctx context.Context, db DB, firstLaunch bool) {
 		}
 	}
 
-	go bot.daylife(ctx, db, sleep, active, firstLaunch)
+	go bot.daylife(ctx, db, sleep, active, firstLaunch, continuingPolarNight)
 }
 
 // daylife は、botの活動サイクルを作る
-func (bot *Persona) daylife(ctx context.Context, db DB, sleep time.Duration, active time.Duration, firstLaunch bool) {
+func (bot *Persona) daylife(ctx context.Context, db DB, sleep time.Duration, active time.Duration, firstLaunch bool, continuingPolarNight bool) {
 	wakeWithSun, sleepWithSun := "", ""
 	if bot.LivesWithSun {
 		wakeWithSun = "そろそろ明るくなってきた" + bot.Assertion + "ね。" + bot.getLocStr(false) + "から"
@@ -124,7 +124,7 @@ func (bot *Persona) daylife(ctx context.Context, db DB, sleep time.Duration, act
 	if sleep > 0 {
 		t := time.NewTimer(sleep)
 		defer t.Stop()
-		if !firstLaunch && active > 0 {
+		if !firstLaunch && (active > 0 || !continuingPolarNight) {
 			go func() {
 				toot := mastodon.Toot{Status: sleepWithSun + "おやすみなさい" + bot.Assertion + "💤……"}
 				if err := bot.post(ctx, toot); err != nil {
@@ -147,6 +147,7 @@ func (bot *Persona) daylife(ctx context.Context, db DB, sleep time.Duration, act
 	defer cancel()
 
 	if active > 0 {
+		continuingPolarNight = false
 		bot.activities(newCtx, db)
 		if sleep > 0 {
 			go func() {
@@ -163,11 +164,13 @@ func (bot *Persona) daylife(ctx context.Context, db DB, sleep time.Duration, act
 				}
 			}()
 		}
+	} else {
+		continuingPolarNight = true
 	}
 
 	select {
 	case <-newCtx.Done():
-		bot.spawn(ctx, db, false)
+		bot.spawn(ctx, db, false, continuingPolarNight)
 	case <-ctx.Done():
 	}
 }

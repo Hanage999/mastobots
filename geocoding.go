@@ -42,7 +42,7 @@ func getLocInfo(key string, lat, lng float64) (result OCResult, err error) {
 
 	res, err := http.Get(query)
 	if err != nil {
-		log.Printf("OpenCageへのリクエストに失敗しました：%s", err)
+		log.Printf("info: OpenCageへのリクエストに失敗しました：%s", err)
 		return
 	}
 	if code := res.StatusCode; code >= 400 {
@@ -104,7 +104,7 @@ func getSleepWakeTimeBySunMovement(zone string, lat, lng float64) (wt, st time.T
 	if strings.Contains(zone, "GMT") {
 		offset, _ := strconv.Atoi(strings.Replace(zone, "GMT", "", -1))
 		loc = time.FixedZone(zone, offset*60*60)
-		fmt.Println(offset)
+		log.Printf("info: GMTからのオフセット：%d", offset)
 	} else {
 		loc, err = time.LoadLocation(zone)
 	}
@@ -129,11 +129,11 @@ func getSleepWakeTimeBySunMovement(zone string, lat, lng float64) (wt, st time.T
 
 		res, err := http.Get(url)
 		if err != nil {
-			log.Printf("日の出日没時刻サイトへのリクエストに失敗しました：%s", err)
+			log.Printf("info: 日の出日没時刻サイトへのリクエストに失敗しました：%s", err)
 			return wt, st, err
 		}
 		if code := res.StatusCode; code >= 400 {
-			err = fmt.Errorf("日の出日没時刻サイトへの接続エラーです(%d)", code)
+			err = fmt.Errorf("info 日の出日没時刻サイトへの接続エラーです(%d)", code)
 			log.Printf("info: %s", err)
 			return wt, st, err
 		}
