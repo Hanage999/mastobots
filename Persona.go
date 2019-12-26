@@ -73,7 +73,7 @@ func initPersona(apps []*MastoApp, bot *Persona) (err error) {
 }
 
 // spawn は、botの活動を開始する
-func (bot *Persona) spawn(ctx context.Context, db DB, firstLaunch bool, continuingPolarNight bool) {
+func (bot *Persona) spawn(ctx context.Context, db DB, firstLaunch bool, nextDayOfPolarNight bool) {
 	sleep, active := getDayCycle(bot.WakeHour, bot.WakeMin, bot.SleepHour, bot.SleepMin)
 
 	if bot.LivesWithSun {
@@ -93,7 +93,7 @@ func (bot *Persona) spawn(ctx context.Context, db DB, firstLaunch bool, continui
 				}
 			case "極夜":
 				log.Printf("info: %s がいる %s は今、極夜です", bot.Name, bot.getLocStr(false))
-				if !firstLaunch && continuingPolarNight {
+				if !firstLaunch && nextDayOfPolarNight {
 					go func() {
 						toot := mastodon.Toot{Status: bot.getLocStr(false) + "は、いま１日でいちばん明るい時間" + bot.Assertion + "。でも極夜だから起きないの" + bot.Assertion + "よ💤……"}
 						if err := bot.post(ctx, toot); err != nil {
@@ -110,11 +110,11 @@ func (bot *Persona) spawn(ctx context.Context, db DB, firstLaunch bool, continui
 		}
 	}
 
-	go bot.daylife(ctx, db, sleep, active, firstLaunch, continuingPolarNight)
+	go bot.daylife(ctx, db, sleep, active, firstLaunch, nextDayOfPolarNight)
 }
 
 // daylife は、botの活動サイクルを作る
-func (bot *Persona) daylife(ctx context.Context, db DB, sleep time.Duration, active time.Duration, firstLaunch bool, continuingPolarNight bool) {
+func (bot *Persona) daylife(ctx context.Context, db DB, sleep time.Duration, active time.Duration, firstLaunch bool, nextDayOfPolarNight bool) {
 	wakeWithSun, sleepWithSun := "", ""
 	if bot.LivesWithSun {
 		wakeWithSun = "そろそろ明るくなってきた" + bot.Assertion + "ね。" + bot.getLocStr(false) + "から"
@@ -124,7 +124,7 @@ func (bot *Persona) daylife(ctx context.Context, db DB, sleep time.Duration, act
 	if sleep > 0 {
 		t := time.NewTimer(sleep)
 		defer t.Stop()
-		if !firstLaunch && (active > 0 || !continuingPolarNight) {
+		if !firstLaunch && !nextDayOfPolarNight {
 			go func() {
 				toot := mastodon.Toot{Status: sleepWithSun + "おやすみなさい" + bot.Assertion + "💤……"}
 				if err := bot.post(ctx, toot); err != nil {
@@ -147,7 +147,7 @@ func (bot *Persona) daylife(ctx context.Context, db DB, sleep time.Duration, act
 	defer cancel()
 
 	if active > 0 {
-		continuingPolarNight = false
+		nextDayOfPolarNight = false
 		bot.activities(newCtx, db)
 		if sleep > 0 {
 			go func() {
@@ -165,12 +165,12 @@ func (bot *Persona) daylife(ctx context.Context, db DB, sleep time.Duration, act
 			}()
 		}
 	} else {
-		continuingPolarNight = true
+		nextDayOfPolarNight = true
 	}
 
 	select {
 	case <-newCtx.Done():
-		bot.spawn(ctx, db, false, continuingPolarNight)
+		bot.spawn(ctx, db, false, nextDayOfPolarNight)
 	case <-ctx.Done():
 	}
 }
