@@ -41,21 +41,32 @@ LOOP:
 					log.Printf("info :%s が古いトゥート候補の削除に失敗しました", bot.Name)
 					return
 				}
-				if err := db.stockItems(bot); err != nil {
+				stock, err := db.stockItems(bot)
+				if err != nil {
 					log.Printf("info: %s がアイテムの収集に失敗しました", bot.Name)
 					return
 				}
-				toot, item, err := bot.createNewsToot(db)
-				if err != nil {
-					log.Printf("info :%s がトゥートの作成に失敗しました", bot.Name)
-					return
+				noft := int(bot.Awake) / int(time.Duration(bot.Interval)*time.Minute)
+				tn := stock / noft
+				if tn > 10 {
+					tn = 10
 				}
-				if item.Title != "" {
-					if err := bot.post(ctx, toot); err != nil {
-						log.Printf("info: %s がトゥートできませんでした。今回は諦めます……", bot.Name)
-					} else {
-						if err := db.deleteItem(bot, item); err != nil {
-							log.Printf("info: %s がトゥート済みアイテムの削除に失敗しました", bot.Name)
+				if tn == 0 {
+					tn = 1
+				}
+				for i := 0; i < tn; i++ {
+					toot, item, err := bot.createNewsToot(db)
+					if err != nil {
+						log.Printf("info :%s がトゥートの作成に失敗しました", bot.Name)
+						return
+					}
+					if item.Title != "" {
+						if err := bot.post(ctx, toot); err != nil {
+							log.Printf("info: %s がトゥートできませんでした。今回は諦めます……", bot.Name)
+						} else {
+							if err := db.deleteItem(bot, item); err != nil {
+								log.Printf("info: %s がトゥート済みアイテムの削除に失敗しました", bot.Name)
+							}
 						}
 					}
 				}

@@ -105,7 +105,7 @@ func (db DB) deleteOldCandidates(bot *Persona) (err error) {
 }
 
 // stockItemsは、新規RSSアイテムの中からbotが興味を持ったitemをストックする。
-func (db DB) stockItems(bot *Persona) (err error) {
+func (db DB) stockItems(bot *Persona) (inStock int, err error) {
 	// botの情報を取得
 	var checkedUntil int
 	if err := db.QueryRow(`
@@ -118,7 +118,7 @@ func (db DB) stockItems(bot *Persona) (err error) {
 		bot.Name,
 	).Scan(&checkedUntil); err != nil {
 		log.Printf("info: botsテーブルから %s の情報取得に失敗しました：%s", bot.Name, err)
-		return err
+		return 0, err
 	}
 
 	// itemsテーブルから新規itemを取得
@@ -207,6 +207,24 @@ func (db DB) stockItems(bot *Persona) (err error) {
 			log.Printf("info: candidatesテーブルが更新できませんでした：%s", err)
 			return
 		}
+	}
+
+	// candidatesの数を取得
+	err = db.QueryRow(`
+		SELECT
+			COUNT(id)
+		FROM candidates
+		WHERE bot_id = ?
+		`,
+		bot.DBID,
+	).Scan(&inStock)
+	switch {
+	case err == sql.ErrNoRows:
+		inStock = 0
+	case err != nil:
+		log.Printf("info: candidatesテーブルから %s のネタストック数を取得し損ねました：%s", bot.Name, err)
+		return
+	default:
 	}
 
 	tf := time.Now()
