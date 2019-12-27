@@ -38,6 +38,7 @@ type Persona struct {
 	LocInfo         OCResult
 	RandomToots     []string
 	RandomFrequency int
+	Awake           time.Duration
 }
 
 // initPersonaは、botとインスタンスの接続を確立する。
@@ -80,6 +81,7 @@ func (bot *Persona) spawn(ctx context.Context, db DB, firstLaunch bool, nextDayO
 		sl, ac, cond, err := getDayCycleBySunMovement(bot.LocInfo.Annotations.Timezone.Name, bot.Latitude, bot.Longitude)
 		if err == nil {
 			sleep, active = sl, ac
+			bot.Awake = ac
 			switch cond {
 			case "白夜":
 				log.Printf("info: %s がいる %s は今、白夜です", bot.Name, bot.getLocStr(false))
