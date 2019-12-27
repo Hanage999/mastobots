@@ -179,7 +179,7 @@ func (bot *Persona) daylife(ctx context.Context, db DB, sleep time.Duration, act
 
 // activities は、botの活動の全てを実行する
 func (bot *Persona) activities(ctx context.Context, db DB) {
-	go bot.periodicToot(ctx, db)
+	go bot.periodicActivity(ctx, db)
 	go bot.monitor(ctx)
 	if len(bot.RandomToots) > 0 && bot.RandomFrequency > 0 {
 		go bot.randomToot(ctx)

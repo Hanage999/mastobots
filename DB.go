@@ -209,24 +209,6 @@ func (db DB) stockItems(bot *Persona) (inStock int, err error) {
 		}
 	}
 
-	// candidatesの数を取得
-	err = db.QueryRow(`
-		SELECT
-			COUNT(id)
-		FROM candidates
-		WHERE bot_id = ?
-		`,
-		bot.DBID,
-	).Scan(&inStock)
-	switch {
-	case err == sql.ErrNoRows:
-		inStock = 0
-	case err != nil:
-		log.Printf("info: candidatesテーブルから %s のネタストック数を取得し損ねました：%s", bot.Name, err)
-		return
-	default:
-	}
-
 	tf := time.Now()
 	const layout = "01-02 15:04:05"
 	log.Printf("trace: %s が、%s に見始めた %d 件のアイテムを %s に見終わりました", bot.Name, tb.Format(layout), len(items), tf.Format(layout))
@@ -245,6 +227,23 @@ func (db DB) stockItems(bot *Persona) (inStock int, err error) {
 	)
 	if err != nil {
 		log.Printf("info: %s のchecked_untilが更新できませんでした：%s", bot.Name, err)
+		return
+	}
+
+	// candidatesの数を取得
+	err = db.QueryRow(`
+		SELECT
+			COUNT(id)
+		FROM candidates
+		WHERE bot_id = ?
+		`,
+		bot.DBID,
+	).Scan(&inStock)
+	switch err {
+	case sql.ErrNoRows, nil:
+		err = nil
+	default:
+		log.Printf("info: candidatesテーブルから %s のネタストック数を取得し損ねました：%s", bot.Name, err)
 	}
 
 	return

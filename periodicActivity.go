@@ -3,6 +3,7 @@ package mastobots
 import (
 	"context"
 	"log"
+	"math"
 	"math/rand"
 	"regexp"
 	"strings"
@@ -11,8 +12,8 @@ import (
 	mastodon "github.com/mattn/go-mastodon"
 )
 
-// periodicTootは、指定された時刻（分）を皮切りに一定時間ごとにトゥートする。
-func (bot *Persona) periodicToot(ctx context.Context, db DB) {
+// periodicActivityは、指定された時刻（分）を皮切りに一定時間ごとに行う活動。
+func (bot *Persona) periodicActivity(ctx context.Context, db DB) {
 	itvl := time.Duration(bot.Interval) * time.Minute
 
 	// 起動後最初のトゥートまでの待機時間を、Intervalより短くする
@@ -46,33 +47,42 @@ LOOP:
 					log.Printf("info: %s がアイテムの収集に失敗しました", bot.Name)
 					return
 				}
-				noft := int(bot.Awake) / int(time.Duration(bot.Interval)*time.Minute)
-				tn := stock / noft
-				if tn > 10 {
-					tn = 10
-				}
-				if tn == 0 {
-					tn = 1
-				}
-				for i := 0; i < tn; i++ {
-					toot, item, err := bot.createNewsToot(db)
-					if err != nil {
-						log.Printf("info :%s がトゥートの作成に失敗しました", bot.Name)
-						return
-					}
-					if item.Title != "" {
-						if err := bot.post(ctx, toot); err != nil {
-							log.Printf("info: %s がトゥートできませんでした。今回は諦めます……", bot.Name)
-						} else {
-							if err := db.deleteItem(bot, item); err != nil {
-								log.Printf("info: %s がトゥート済みアイテムの削除に失敗しました", bot.Name)
-							}
-						}
-					}
+				if err := bot.newsToot(ctx, stock, db); err != nil {
+					log.Printf("info: %s がニューストゥートに失敗しました", bot.Name)
 				}
 			}()
 		}
 	}
+}
+
+// newsTootはストックしたRSSアイテムをネタにトゥートする
+func (bot *Persona) newsToot(ctx context.Context, stock int, db DB) (err error) {
+	if stock == 0 {
+		return
+	}
+
+	tf := float64(bot.Awake) / float64(time.Duration(bot.Interval)*time.Minute)
+	tn := int(math.Ceil(float64(stock) / tf))
+	if tn > 10 {
+		tn = 10
+	}
+	for i := 0; i < tn; i++ {
+		toot, item, err := bot.createNewsToot(db)
+		if err != nil {
+			log.Printf("info :%s がニューストゥートの作成に失敗しました", bot.Name)
+			return err
+		}
+		if item.Title != "" {
+			if err = bot.post(ctx, toot); err != nil {
+				log.Printf("info: %s がトゥートできませんでした。今回は諦めます……", bot.Name)
+			} else {
+				if err = db.deleteItem(bot, item); err != nil {
+					log.Printf("info: %s がトゥート済みアイテムの削除に失敗しました", bot.Name)
+				}
+			}
+		}
+	}
+	return
 }
 
 // createNewsTootはトゥートする内容を作成する。
