@@ -170,10 +170,9 @@ func (bot *Persona) daylife(ctx context.Context, db DB, sleep time.Duration, act
 		nextDayOfPolarNight = true
 	}
 
-	select {
-	case <-newCtx.Done():
+	<-newCtx.Done()
+	if ctx.Err() == nil {
 		bot.spawn(ctx, db, false, nextDayOfPolarNight)
-	case <-ctx.Done():
 	}
 }
 
