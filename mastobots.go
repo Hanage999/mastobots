@@ -71,6 +71,7 @@ func Initialize() (bots []*Persona, db DB, err error) {
 	}
 	appName = conf.GetString("MastoAppName")
 	openCageKey = conf.GetString("OpenCageKey")
+	nOfJobs := conf.GetInt("NumConcurrentLangJobs")
 	conf.UnmarshalKey("Personae", &bots)
 	cr = conf.GetStringMapString("DBCredentials")
 
@@ -114,11 +115,13 @@ func Initialize() (bots []*Persona, db DB, err error) {
 	}
 
 	// botの初期化（複数設定可）
+	jpl := make(chan int, nOfJobs)
 	for _, bot := range bots {
 		if err := initPersona(apps, bot); err != nil {
 			log.Printf("alert: %s を初期化できませんでした", bot.Name)
 			return nil, db, err
 		}
+		bot.JobPool = jpl
 	}
 
 	// データベースへの接続

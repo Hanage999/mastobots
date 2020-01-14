@@ -9,6 +9,8 @@ DBCredentials:  # MySQLデータベース接続のための資格情報（環境
 OpenCageKey : ***   # Geocodingサービス  (https://opencagedata.com/) のためのAPIキー（要登録）
                     # LiveWithSunをtrueにした場合、opencagedataへのユーザ登録とAPIキー取得が必要です。
 
+NumConcurrentLangJobs: 4    # 言語解析ジョブの同時実行数の上限（多すぎるとメモリ使いすぎでアプリが落ちる）
+
 Personae:   # 各botの情報
     -   Name: mybot
         Instance: https://example.com
