@@ -167,7 +167,7 @@ func (db DB) stockItems(bot *Persona) (inStock int, err error) {
 		if item.Summary != item.Title {
 			sumStr = item.Title + "。\n" + textContent(item.Summary)
 		}
-		result, err := parse(sumStr)
+		result, err := parse(bot.JobPool, sumStr)
 		if err != nil {
 			log.Printf("info: id: %d のサマリーのパースに失敗しました", item.ID)
 			continue

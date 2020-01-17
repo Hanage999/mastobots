@@ -39,6 +39,7 @@ type Persona struct {
 	RandomToots     []string
 	RandomFrequency int
 	Awake           time.Duration
+	JobPool         chan int
 }
 
 // initPersonaは、botとインスタンスの接続を確立する。

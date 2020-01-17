@@ -93,7 +93,7 @@ func (bot *Persona) respondToUpdate(ctx context.Context, ev *mastodon.UpdateEven
 	if text == "" {
 		return
 	}
-	result, err := parse(text)
+	result, err := parse(bot.JobPool, text)
 	if err != nil {
 		return
 	}
@@ -185,7 +185,7 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 		name = name + " "
 	}
 	txt := textContent(status.Content)
-	res, err := parse(txt)
+	res, err := parse(bot.JobPool, txt)
 	if err != nil {
 		return
 	}
