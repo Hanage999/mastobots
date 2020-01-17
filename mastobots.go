@@ -72,6 +72,11 @@ func Initialize() (bots []*Persona, db DB, err error) {
 	appName = conf.GetString("MastoAppName")
 	openCageKey = conf.GetString("OpenCageKey")
 	nOfJobs := conf.GetInt("NumConcurrentLangJobs")
+	if nOfJobs <= 0 {
+		nOfJobs = 1
+	} else if nOfJobs > 10 {
+		nOfJobs = 10
+	}
 	conf.UnmarshalKey("Personae", &bots)
 	cr = conf.GetStringMapString("DBCredentials")
 
