@@ -7,14 +7,11 @@ import (
 	"math/rand"
 	"os/exec"
 	"strings"
-	"sync"
 	"unicode"
 
 	"golang.org/x/net/html"
 	"gopkg.in/jdkato/prose.v2"
 )
-
-var mutex sync.Mutex
 
 // parseResultはテキストの形態素解析結果のインターフェースを提供する。
 type parseResult interface {
@@ -117,15 +114,14 @@ func parse(jpl chan int, text string) (result parseResult, err error) {
 		return
 	}
 
-	jpl <- 0
-
 	if isJap(text) {
 		result, err = parseJapanese(text)
 	} else {
+		jpl <- 0
 		result, err = parseEnglish(text)
+		<-jpl
 	}
 
-	<-jpl
 	return
 }
 
