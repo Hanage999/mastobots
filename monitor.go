@@ -215,12 +215,27 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 			}
 			msg = "@" + account.Acct + " わーい、お友達" + bot.Assertion + "ね！これからは、" + name + "さんのトゥートを生温かく見守っていく" + bot.Assertion + "よー"
 		}
+		if msg != "" {
+			toot := mastodon.Toot{Status: msg, Visibility: status.Visibility, InReplyToID: status.ID}
+			if err = bot.post(ctx, toot); err != nil {
+				log.Printf("info: %s がリプライに失敗しました", bot.Name)
+				return err
+			}
+		}
 	case strings.Contains(txt, "いい"+bot.Assertion):
 		yon := "だめ" + bot.Assertion + "よ"
 		if rand.Intn(2) == 1 {
 			yon = "いい" + bot.Assertion + "よ"
 		}
 		msg = "@" + account.Acct + " " + bot.Starter + name + bot.Title + "。" + yon
+		if msg != "" {
+			toot := mastodon.Toot{Status: msg, Visibility: status.Visibility, InReplyToID: status.ID}
+			if err = bot.post(ctx, toot); err != nil {
+				log.Printf("info: %s がリプライに失敗しました", bot.Name)
+				return err
+			}
+		}
+		fallthrough
 	case jm.isWeatherRelated():
 		lc, dt, err := jm.judgeWeatherRequest()
 		if err != nil {
@@ -236,14 +251,14 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 			ignoreStr = lc + "はともかく、"
 		}
 		msg = "@" + account.Acct + " " + ignoreStr + forecastMessage(data, bot.Assertion)
-	}
-
-	if msg != "" {
-		toot := mastodon.Toot{Status: msg, Visibility: status.Visibility, InReplyToID: status.ID}
-		if err = bot.post(ctx, toot); err != nil {
-			log.Printf("info: %s がリプライに失敗しました", bot.Name)
-			return err
+		if msg != "" {
+			toot := mastodon.Toot{Status: msg, Visibility: status.Visibility, InReplyToID: status.ID}
+			if err = bot.post(ctx, toot); err != nil {
+				log.Printf("info: %s がリプライに失敗しました", bot.Name)
+				return err
+			}
 		}
 	}
+
 	return
 }
