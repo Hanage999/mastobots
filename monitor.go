@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	mastodon "github.com/mattn/go-mastodon"
+	mastodon "github.com/hanage999/go-mastodon"
 )
 
 // moitorは、websocketでタイムラインを監視して反応する。
@@ -20,6 +20,7 @@ func (bot *Persona) monitor(ctx context.Context) {
 	evch, err := bot.openStreaming(newCtx)
 	if err != nil {
 		log.Printf("info: %s がストリーミングを受信開始できませんでした", bot.Name)
+		cancel()
 		return
 	}
 
