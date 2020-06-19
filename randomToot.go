@@ -6,7 +6,7 @@ import (
 	"math/rand"
 	"time"
 
-	mastodon "github.com/mattn/go-mastodon"
+	mastodon "github.com/hanage999/go-mastodon"
 )
 
 // randomTootは、ランダムにトゥートする。

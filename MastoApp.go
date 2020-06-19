@@ -5,7 +5,7 @@ import (
 	"errors"
 	"log"
 
-	mastodon "github.com/mattn/go-mastodon"
+	mastodon "github.com/hanage999/go-mastodon"
 )
 
 // MastoApp は、Mastodonクライアントの情報を格納する。
