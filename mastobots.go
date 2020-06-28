@@ -19,6 +19,7 @@ var (
 	retryInterval = time.Duration(5) * time.Second
 	locationCodes map[string]interface{}
 	openCageKey   = ""
+	imageDetector = ""
 )
 
 // Initialize は、config.ymlに従ってbotとデータベース接続を初期化する。
@@ -56,12 +57,6 @@ func Initialize() (bots []*Persona, db DB, err error) {
 		return
 	}
 
-	// 画像認識モデルの読み込み
-	model, labels, err = loadModel()
-	if err != nil {
-		return
-	}
-
 	var appName string
 	var apps []*MastoApp
 	var cr map[string]string
@@ -77,6 +72,7 @@ func Initialize() (bots []*Persona, db DB, err error) {
 	}
 	appName = conf.GetString("MastoAppName")
 	openCageKey = conf.GetString("OpenCageKey")
+	imageDetector = conf.GetString("ImageDetector")
 	nOfJobs := conf.GetInt("NumConcurrentLangJobs")
 	if nOfJobs <= 0 {
 		nOfJobs = 1

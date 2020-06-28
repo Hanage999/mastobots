@@ -11,6 +11,8 @@ OpenCageKey : ***   # Geocodingサービス  (https://opencagedata.com/) のた�
 
 NumConcurrentLangJobs: 4    # 言語解析ジョブの同時実行数の上限（多すぎるとメモリ使いすぎでアプリが落ちる。1〜10を指定可）
 
+ImageDetector: http://example.com:9090/detect    # 画像解析APIのURL
+
 Personae:   # 各botの情報
     -   Name: mybot
         Instance: https://example.com
