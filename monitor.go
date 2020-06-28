@@ -20,10 +20,10 @@ func (bot *Persona) monitor(ctx context.Context) {
 	evch, err := bot.openStreaming(newCtx)
 	if err != nil {
 		log.Printf("info: %s がストリーミングを受信開始できませんでした", bot.Name)
-		cancel()
 		return
 	}
 
+	ers := ""
 	for ev := range evch {
 		switch t := ev.(type) {
 		case *mastodon.UpdateEvent:
@@ -39,17 +39,18 @@ func (bot *Persona) monitor(ctx context.Context) {
 				}
 			}()
 		case *mastodon.ErrorEvent:
-			if ctx.Err() != nil {
-				log.Printf("info: %s が今日のタイムライン監視を終了しました：%s", bot.Name, ctx.Err())
-				return
-			}
-
-			itvl := rand.Intn(4000) + 1000
-			log.Printf("info: %s の接続が切れました。%dミリ秒後に再接続します：%s", bot.Name, itvl, t.Error())
-			time.Sleep(time.Duration(itvl) * time.Millisecond)
-			go bot.monitor(ctx)
-			return
+			ers = t.Error()
+			log.Printf("info: %s がエラーイベントを受信しました：%s", bot.Name, ers)
 		}
+	}
+
+	if ctx.Err() != nil {
+		log.Printf("info: %s が今日のタイムライン監視を終了しました：%s", bot.Name, ctx.Err())
+	} else {
+		itvl := rand.Intn(4000) + 1000
+		log.Printf("info: %s の接続が切れました。%dミリ秒後に再接続します：%s", bot.Name, itvl, ers)
+		time.Sleep(time.Duration(itvl) * time.Millisecond)
+		go bot.monitor(ctx)
 	}
 }
 
@@ -236,8 +237,9 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 				return err
 			}
 		}
-		fallthrough
-	case jm.isWeatherRelated():
+	}
+
+	if jm.isWeatherRelated() {
 		lc, dt, err := jm.judgeWeatherRequest()
 		if err != nil {
 			return err
