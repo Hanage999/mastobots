@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/rand"
 	"regexp"
+	"runtime"
 	"strings"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 
 // moitorは、websocketでタイムラインを監視して反応する。
 func (bot *Persona) monitor(ctx context.Context) {
+	log.Printf("info: Goroutines: %d", runtime.NumGoroutine())
 	log.Printf("info: %s がタイムライン監視を開始しました", bot.Name)
 	newCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
