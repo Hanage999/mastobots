@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"math/rand"
-	"runtime"
 	"time"
 
 	mastodon "github.com/hanage999/go-mastodon"
@@ -152,7 +151,6 @@ func (bot *Persona) daylife(ctx context.Context, db DB, sleep time.Duration, act
 
 	if active > 0 {
 		log.Printf("info: %s が起きたところ", bot.Name)
-		log.Printf("info: Goroutines: %d", runtime.NumGoroutine())
 		nextDayOfPolarNight = false
 		bot.activities(newCtx, db)
 		if sleep > 0 {
@@ -175,8 +173,6 @@ func (bot *Persona) daylife(ctx context.Context, db DB, sleep time.Duration, act
 	}
 
 	<-newCtx.Done()
-	log.Printf("info: %s が寝たところ", bot.Name)
-	log.Printf("info: Goroutines: %d", runtime.NumGoroutine())
 	if ctx.Err() == nil {
 		bot.spawn(ctx, db, false, nextDayOfPolarNight)
 	}

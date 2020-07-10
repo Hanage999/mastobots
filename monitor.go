@@ -6,7 +6,6 @@ import (
 	"log"
 	"math/rand"
 	"regexp"
-	"runtime"
 	"strings"
 	"time"
 
@@ -15,7 +14,6 @@ import (
 
 // moitorは、websocketでホームタイムラインを監視して反応する。
 func (bot *Persona) monitor(ctx context.Context) {
-	log.Printf("info: Goroutines: %d", runtime.NumGoroutine())
 	log.Printf("info: %s がタイムライン監視を開始しました", bot.Name)
 	newCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -58,7 +56,6 @@ func (bot *Persona) monitor(ctx context.Context) {
 
 // moitorFederationは、websocketで連合タイムラインを監視して反応する。
 func (bot *Persona) monitorFederation(ctx context.Context) {
-	log.Printf("info: Goroutines: %d", runtime.NumGoroutine())
 	log.Printf("info: %s が連合タイムライン監視を開始しました", bot.Name)
 	newCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -237,12 +234,13 @@ func (bot *Persona) respondToImages(ctx context.Context, ev *mastodon.UpdateEven
 			msg = "裸の" + msg
 		}
 
-		msg = "@hanage999 " + msg + ev.Status.URI
-		toot := mastodon.Toot{Status: msg, Visibility: "direct"}
-		if err = bot.post(ctx, toot); err != nil {
-			log.Printf("info: %s がトゥートに失敗しました。\n", bot.Name)
-			return
-		}
+		/*		msg = "@hanage999 " + msg + ev.Status.URI
+				toot := mastodon.Toot{Status: msg, Visibility: "direct"}
+				if err = bot.post(ctx, toot); err != nil {
+					log.Printf("info: %s がトゥートに失敗しました。\n", bot.Name)
+					return
+				}
+		*/
 	}
 	return
 }
@@ -287,12 +285,13 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 				msg = "裸の" + msg
 			}
 
-			msg = "@hanage999 " + msg + status.URI
-			toot := mastodon.Toot{Status: msg, Visibility: "direct"}
-			if err = bot.post(ctx, toot); err != nil {
-				log.Printf("info: %s がトゥートに失敗しました。\n", bot.Name)
-				return
-			}
+			/*			msg = "@hanage999 " + msg + status.URI
+						toot := mastodon.Toot{Status: msg, Visibility: "direct"}
+						if err = bot.post(ctx, toot); err != nil {
+							log.Printf("info: %s がトゥートに失敗しました。\n", bot.Name)
+							return
+						}
+			*/
 		}
 	}
 
