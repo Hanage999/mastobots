@@ -90,6 +90,5 @@ func checkImage(imgurl string) (label string, err error) {
 		return
 	}
 
-	log.Println("info: " + string(respBody))
 	return string(respBody), nil
 }
