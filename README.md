@@ -10,14 +10,14 @@ MySQLデータベースに保存された日本語のRSSアイテムをJuman++�
 
 ## 動作環境
 + Ubuntu 18.04.02
-+ Go 1.14.1
++ Go 1.15
 + MySQL 5.7.25
-+ Juman++ 2.0.0-rc2
++ Juman++ 2.0.0-rc3
 
 ## 依存ソフトウェア
 以下があらかじめインストールされていないと起動しません。
 + MySQL
-+ [Juman++ 2.0.0-rc2](http://nlp.ist.i.kyoto-u.ac.jp/index.php?JUMAN++)
++ [Juman++ 2.0.0-rc3](http://nlp.ist.i.kyoto-u.ac.jp/index.php?JUMAN++)
 
 ## 機能
 + トゥートの間隔、コメント、好みの単語などをカスタマイズ可能。
