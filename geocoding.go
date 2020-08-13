@@ -40,7 +40,7 @@ type SunInfo struct {
 	} `json:"results"`
 }
 
-// getLocInfo は、botの座標から所在地情報を取得して格納する
+// getLocDatafromCoordinates は、botの座標から所在地情報を取得して格納する
 func getLocDataFromCoordinates(key string, lat, lng float64) (result OCResult, err error) {
 	query := "https://api.opencagedata.com/geocode/v1/json?q=" + fmt.Sprint(lat) + "%2C" + fmt.Sprint(lng) + "&key=" + key + "&language=ja&pretty=1"
 

@@ -123,7 +123,7 @@ func GetLocationWeather(lat, lng float64, when int) (data OWForcast, err error) 
 	return
 }
 
-// EmojifyWeather は、天気を絵文字で表現する。
+// emojifyWeather は、天気を絵文字で表現する。
 func emojifyWeather(telop string) (emojiStr string, err error) {
 	if telop == "" {
 		err = fmt.Errorf("info: 天気テキストが空です")
