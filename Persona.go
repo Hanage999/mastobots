@@ -86,20 +86,20 @@ func (bot *Persona) spawn(ctx context.Context, db DB, firstLaunch bool, nextDayO
 			bot.Awake = ac
 			switch cond {
 			case "白夜":
-				log.Printf("info: %s がいる %s は今、白夜です", bot.Name, bot.getLocStr(false))
+				log.Printf("info: %s がいる %s は今、白夜です", bot.Name, getLocString(bot.LocInfo, false))
 				if !firstLaunch {
 					go func() {
-						toot := mastodon.Toot{Status: bot.getLocStr(false) + "は、いま１日でいちばん暗い時間" + bot.Assertion + "。でも白夜だから寝ないの" + bot.Assertion + "よ"}
+						toot := mastodon.Toot{Status: getLocString(bot.LocInfo, false) + "は、いま１日でいちばん暗い時間" + bot.Assertion + "。でも白夜だから寝ないの" + bot.Assertion + "よ"}
 						if err := bot.post(ctx, toot); err != nil {
 							log.Printf("info: %s がトゥートできませんでした。今回は諦めます……", bot.Name)
 						}
 					}()
 				}
 			case "極夜":
-				log.Printf("info: %s がいる %s は今、極夜です", bot.Name, bot.getLocStr(false))
+				log.Printf("info: %s がいる %s は今、極夜です", bot.Name, getLocString(bot.LocInfo, false))
 				if !firstLaunch && nextDayOfPolarNight {
 					go func() {
-						toot := mastodon.Toot{Status: bot.getLocStr(false) + "は、いま１日でいちばん明るい時間" + bot.Assertion + "。でも極夜だから起きないの" + bot.Assertion + "よ💤……"}
+						toot := mastodon.Toot{Status: getLocString(bot.LocInfo, false) + "は、いま１日でいちばん明るい時間" + bot.Assertion + "。でも極夜だから起きないの" + bot.Assertion + "よ💤……"}
 						if err := bot.post(ctx, toot); err != nil {
 							log.Printf("info: %s がトゥートできませんでした。今回は諦めます……", bot.Name)
 						}
@@ -107,7 +107,7 @@ func (bot *Persona) spawn(ctx context.Context, db DB, firstLaunch bool, nextDayO
 				}
 			default:
 				log.Printf("info: %s の所在地、起床までの時間、起床後の活動時間：", bot.Name)
-				log.Printf("info: 　%s、%s、%s", bot.getLocStr(true), sleep, active)
+				log.Printf("info: 　%s、%s、%s", getLocString(bot.LocInfo, true), sleep, active)
 			}
 		} else {
 			log.Printf("info: %s の生活サイクルが太陽の出没から決められませんでした。デフォルトの起居時刻を使います：%s", bot.Name, err)
@@ -121,8 +121,8 @@ func (bot *Persona) spawn(ctx context.Context, db DB, firstLaunch bool, nextDayO
 func (bot *Persona) daylife(ctx context.Context, db DB, sleep time.Duration, active time.Duration, firstLaunch bool, nextDayOfPolarNight bool) {
 	wakeWithSun, sleepWithSun := "", ""
 	if bot.LivesWithSun {
-		wakeWithSun = "そろそろ明るくなってきた" + bot.Assertion + "ね。" + bot.getLocStr(false) + "から"
-		sleepWithSun = bot.getLocStr(true) + "のあたりはもうすっかり暗くなった" + bot.Assertion + "ね。では、"
+		wakeWithSun = "そろそろ明るくなってきた" + bot.Assertion + "ね。" + getLocString(bot.LocInfo, false) + "から"
+		sleepWithSun = getLocString(bot.LocInfo, true) + "のあたりはもうすっかり暗くなった" + bot.Assertion + "ね。では、"
 	}
 
 	if sleep > 0 {
@@ -158,11 +158,11 @@ func (bot *Persona) daylife(ctx context.Context, db DB, sleep time.Duration, act
 		if sleep > 0 {
 			go func() {
 				weatherStr := ""
-				data, err := GetRandomWeather(0)
+				data, err := GetLocationWeather(bot.Latitude, bot.Longitude, 0)
 				if err != nil {
 					log.Printf("info: %s が天気予報を取ってこれませんでした", bot.Name)
 				} else {
-					weatherStr = "。" + forecastMessage(data, bot.Assertion)
+					weatherStr = "。" + forecastMorningMessage(data, 0, bot.Assertion)
 				}
 				toot := mastodon.Toot{Status: wakeWithSun + "おはようございます" + bot.Assertion + weatherStr}
 				if err := bot.post(newCtx, toot); err != nil {
@@ -263,53 +263,5 @@ func (bot *Persona) relationWith(ctx context.Context, id mastodon.ID) (rel []*ma
 		}
 		break
 	}
-	return
-}
-
-func (bot *Persona) getLocStr(simple bool) (str string) {
-	info := bot.LocInfo
-
-	tp := info.Components["_type"]
-	str = info.Components[tp]
-
-	country := info.Components["country"] + info.Annotations.Flag
-	state := info.Components["state"]
-	stateDistrict := info.Components["state_district"]
-	county := info.Components["county"]
-	city := info.Components["city"]
-	suburb := info.Components["suburb"]
-	town := info.Components["town"]
-	neighborhood := info.Components["neighborhood"]
-	unknown := info.Components["unknown"]
-
-	names := [...]string{unknown, neighborhood, town, suburb, city}
-	for _, name := range names {
-		if str != "" {
-			break
-		}
-		str = name
-	}
-
-	if simple {
-		return
-	}
-
-	if country == "" {
-		country = "国ではないどこか"
-	}
-
-	nameadrs := [...]*string{&city, &suburb, &town, &neighborhood}
-	for _, name := range nameadrs {
-		if str == *name {
-			*name = ""
-		}
-	}
-
-	if town == city {
-		town = ""
-	}
-
-	str = state + stateDistrict + county + city + suburb + town + neighborhood + "（" + country + "）" + "の" + str
-
 	return
 }

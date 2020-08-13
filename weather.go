@@ -7,132 +7,116 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
-
-	"golang.org/x/net/html"
 )
 
-// WeatherData は、livedoor天気予報のAPIが返してくるjsonデータを保持する
-type WeatherData struct {
-	Forecasts []Forecast
-	Location  Location
+// OWForcasts は、OpenWeatherMapからの天気予報データを格納する
+type OWForcasts struct {
+	Current struct {
+		Dt       int64   `json:"dt"`
+		Temp     float64 `json:"TEMP"`
+		Humidity int     `json:"humidity"`
+		Weather  []struct {
+			ID          int    `json:"id"`
+			Main        string `json:"main"`
+			Description string `json:"description"`
+			Icon        string `json:"icon"`
+		} `json:"weather"`
+	}
+	Daily []OWForcast `json:"daily"`
 }
 
-// Forecast は、livedoor天気予報のAPIが返してくるjsonデータを保持する。
-type Forecast struct {
-	DateLabel   string `json:"dateLabel"`
-	Telop       string `json:"telop"`
-	Date        string `json:"date"`
-	Temperature struct {
-		Min struct {
-			Celsius    string `json:"celsius"`
-			Fahrenheit string `json:"fahrenheit"`
-		}
-		Max struct {
-			Celsius    string `json:"celsius"`
-			Fahrenheit string `json:"fahrenheit"`
-		}
-	}
-	Image struct {
-		Width  int    `json:"width"`
-		URL    string `json:"url"`
-		Title  string `json:"title"`
-		Height int    `json:"height"`
-	}
+// OWForcast は、OpenWeatherMapからの天気予報データを格納する
+type OWForcast struct {
+	Dt   int64 `json:"dt"`
+	Temp struct {
+		Morn  float64 `json:"morn"`
+		Day   float64 `json:"day"`
+		Eve   float64 `json:"eve"`
+		Night float64 `json:"night"`
+		Min   float64 `json:"min"`
+		Max   float64 `json:"max"`
+	} `json:"temp"`
+	Humidity int `json:"humidity"`
+	Weather  []struct {
+		ID          int    `json:"id"`
+		Main        string `json:"main"`
+		Description string `json:"description"`
+		Icon        string `json:"icon"`
+	} `json:"weather"`
 }
 
-// Location は、livedoor天気予報のAPIが返してくるjsonデータを保持する
-type Location struct {
-	City       string `json:"city"`
-	Area       string `json:"area"`
-	Prefecture string `json:"prefecture"`
-}
-
-// getLocationCodes は、livedoor天気予報の地域コードを取得する
-func getLocationCodes() (results map[string]interface{}, err error) {
-	url := "http://weather.livedoor.com/forecast/rss/primary_area.xml"
-
-	results = make(map[string]interface{})
-
-	res, err := http.Get(url)
-	if err != nil {
-		log.Printf("info: %s へのリクエストに失敗しました：%s", url, err)
-		return
-	}
-	defer res.Body.Close()
-
-	if code := res.StatusCode; code >= 400 {
-		err = fmt.Errorf("info: %s への接続エラーです(%d)", url, code)
-		log.Printf("info: %s\n", err)
-		return
-	}
-
-	doc, err := html.Parse(res.Body)
-	if err != nil {
-		log.Printf("info: %s のパースに失敗しました：%s", url, err)
-		return
-	}
-
-	var f func(*html.Node)
-	f = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data == "city" {
-			var ttl, code string
-			for _, a := range n.Attr {
-				if a.Key == "title" {
-					ttl = a.Val
-				}
-				if a.Key == "id" {
-					code = a.Val
-				}
+// isWeatherRelated は、文字列が天気関係の話かどうかを調べる。
+func (result jumanResult) isWeatherRelated() bool {
+	kws := [...]string{"天気", "気温", "湿度", "暖", "暑", "雨", "晴", "曇", "雪", "風", "嵐", "雹", "湿", "乾", "冷える", "蒸す", "熱帯夜"}
+	for _, node := range result.Nodes {
+		for _, w := range kws {
+			if strings.Contains(node[11], w) {
+				return true
 			}
-			results[ttl] = code
-		}
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			f(c)
 		}
 	}
-	f(doc)
+	return false
+}
+
+// judgeWeatherRequest は、天気の要望の内容を判断する
+func (result jumanResult) judgeWeatherRequest() (lc []string, dt int, err error) {
+	lc = result.getWeatherQueryLocation()
+	dt = result.getWeatherQueryDate()
 	return
 }
 
-// GetRandomWeather は、livedoor天気予報でランダムな地域の天気を取得する。
-// when: 0は今日、1は明日、2は明後日
-func GetRandomWeather(when int) (data WeatherData, err error) {
-	// mapのrangeは順番がランダム化されるらしいので
-	var code interface{}
-	for _, code = range locationCodes {
-		break
+// getWeatherQueryLocation は、天気情報の要望トゥートの形態素解析結果に地名が存在すればそれを返す。
+func (result jumanResult) getWeatherQueryLocation() (loc []string) {
+	for _, node := range result.Nodes {
+		// 5番目の要素は品詞詳細、11番目の要素は諸情報
+		if node[5] == "地名" || node[5] == "人名" || strings.Contains(node[11], "地名") || strings.Contains(node[11], "場所") {
+			loc = append(loc, node[0])
+		}
 	}
+	return
+}
 
-	codeStr, _ := code.(string)
-	url := "http://weather.livedoor.com/forecast/webservice/json/v1?city=" + codeStr
+// getWeatherQueryDate は、天気情報の要望トゥートの形態素解析結果に日の指定があればそれを返す。
+func (result jumanResult) getWeatherQueryDate() (date int) {
+	for _, node := range result.Nodes {
+		switch node[1] {
+		case "あす", "あした", "みょうにち":
+			date = 1
+			return
+		case "あさって", "みょうごにち":
+			date = 2
+			return
+		}
+	}
+	return
+}
 
-	res, err := http.Get(url)
+// GetLocationWeather は、指定された座標の天気をOpenWeatherMapで取得する。
+// when: 0は今日、1は明日、2は明後日
+func GetLocationWeather(lat, lng float64, when int) (data OWForcast, err error) {
+	query := "https://api.openweathermap.org/data/2.5/onecall?lat=" + fmt.Sprintf("%f", lat) + "&lon=" + fmt.Sprintf("%f", lng) + "&units=metric&lang=ja&exclude=hourly,minutely&appid=" + weatherKey
+
+	res, err := http.Get(query)
 	if err != nil {
-		log.Printf("info: 天気予報サイトへのリクエストに失敗しました：%s", err)
+		log.Printf("OpenWeatherMapへのリクエストに失敗しました：%s", err)
 		return
 	}
-
 	if code := res.StatusCode; code >= 400 {
-		err = fmt.Errorf("天気予報サイトへの接続エラーです(%d)", code)
+		err = fmt.Errorf("OpenWeatherMapへの接続エラーです(%d)", code)
 		log.Printf("info: %s", err)
 		return
 	}
-	defer res.Body.Close()
-
-	var response WeatherData
-
-	if err = json.NewDecoder(res.Body).Decode(&response); err != nil {
-		log.Printf("info: 予報データがデコードできませんでした：%s", err)
+	var ow OWForcasts
+	if err = json.NewDecoder(res.Body).Decode(&ow); err != nil {
+		log.Printf("info: OpenWeatherMapからのレスポンスがデコードできませんでした：%s", err)
+		res.Body.Close()
 		return
 	}
+	res.Body.Close()
 
-	response.Forecasts[when].Telop, err = emojifyWeather(response.Forecasts[when].Telop)
-	if err != nil {
-		return
+	if len(ow.Daily) > 0 {
+		data = ow.Daily[when]
 	}
-
-	data.Forecasts = []Forecast{response.Forecasts[when]}
-	data.Location = response.Location
 
 	return
 }
@@ -161,16 +145,14 @@ func emojifyWeather(telop string) (emojiStr string, err error) {
 }
 
 // forecastMessage は、天気予報を告げるメッセージを返す。
-func forecastMessage(data WeatherData, assertion string) (msg string) {
+func forecastMessage(ldata OCResult, wdata OWForcast, when int, assertion string) (msg string) {
 	maxT := ""
-	if t := data.Forecasts[0].Temperature.Max.Celsius; t != "" {
-		maxT = "最高 " + t + "℃"
-	}
+	t := wdata.Temp.Max
+	maxT = "最高 " + fmt.Sprintf("%.1f", t) + "℃"
 
 	minT := ""
-	if t := data.Forecasts[0].Temperature.Min.Celsius; t != "" {
-		minT = "最低 " + t + "℃"
-	}
+	t = wdata.Temp.Min
+	minT = "最低 " + fmt.Sprintf("%.1f", t) + "℃"
 
 	cm := " "
 	spc := ""
@@ -184,54 +166,54 @@ func forecastMessage(data WeatherData, assertion string) (msg string) {
 		sep = "・"
 	}
 
-	msg = data.Forecasts[0].DateLabel + "の" + data.Location.Prefecture + data.Location.City + "は " + data.Forecasts[0].Telop + cm + maxT + sep + minT + spc + "みたい" + assertion + "ね"
-
-	return
-}
-
-// judgeWeatherRequest は、天気の要望の内容を判断する
-func (result jumanResult) judgeWeatherRequest() (lc string, dt int, err error) {
-	lc = result.getWeatherQueryLocation()
-	dt = result.getWeatherQueryDate()
-	return
-}
-
-// getWeatherQueryLocation は、天気情報の要望トゥートの形態素解析結果に地名が存在すればそれを返す。
-func (result jumanResult) getWeatherQueryLocation() (loc string) {
-	for _, node := range result.Nodes {
-		// 5番目の要素は品詞詳細、11番目の要素は諸情報
-		if node[5] == "地名" || node[5] == "人名" || strings.Contains(node[11], "地名") || strings.Contains(node[11], "場所") {
-			loc = node[0]
-			return
-		}
+	whenstr := ""
+	switch when {
+	case 0:
+		whenstr = "今日"
+	case 1:
+		whenstr = "明日"
+	case 2:
+		whenstr = "明後日"
 	}
+
+	msg = whenstr + "の" + getLocString(ldata, false) + "は" + wdata.Weather[0].Description + cm + maxT + sep + minT + "、湿度 " + fmt.Sprintf("%d", wdata.Humidity) + "%" + spc + "みたい" + assertion + "ね"
+
 	return
 }
 
-// getWeatherQueryDate は、天気情報の要望トゥートの形態素解析結果に日の指定があればそれを返す。
-func (result jumanResult) getWeatherQueryDate() (date int) {
-	for _, node := range result.Nodes {
-		switch node[1] {
-		case "あす", "あした", "みょうにち":
-			date = 1
-			return
-		case "あさって", "みょうごにち":
-			date = 2
-			return
-		}
-	}
-	return
-}
+// forecastMorningMessage は、起きがけの天気予報メッセージを返す。
+func forecastMorningMessage(wdata OWForcast, when int, assertion string) (msg string) {
+	maxT := ""
+	t := wdata.Temp.Max
+	maxT = "最高 " + fmt.Sprintf("%f", t) + "℃"
 
-// isWeatherRelated は、文字列が天気関係の話かどうかを調べる。
-func (result jumanResult) isWeatherRelated() bool {
-	kws := [...]string{"天気", "気温", "暖", "暑", "雨", "晴", "曇", "雪", "風", "嵐", "雹", "湿", "乾", "冷える", "蒸す", "熱帯夜"}
-	for _, node := range result.Nodes {
-		for _, w := range kws {
-			if strings.Contains(node[11], w) {
-				return true
-			}
-		}
+	minT := ""
+	t = wdata.Temp.Min
+	minT = "最低 " + fmt.Sprintf("%f", t) + "℃"
+
+	cm := " "
+	spc := ""
+	if maxT != "" || minT != "" {
+		cm = "、"
+		spc = " "
 	}
-	return false
+
+	sep := ""
+	if maxT != "" && minT != "" {
+		sep = "・"
+	}
+
+	whenstr := ""
+	switch when {
+	case 0:
+		whenstr = "今日"
+	case 1:
+		whenstr = "明日"
+	case 2:
+		whenstr = "明後日"
+	}
+
+	msg = whenstr + "の" + "このあたりは" + wdata.Weather[0].Description + cm + maxT + sep + minT + "、湿度 " + fmt.Sprintf("%d", wdata.Humidity) + "%" + spc + "みたい" + assertion + "ね"
+
+	return
 }
