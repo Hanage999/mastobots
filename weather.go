@@ -11,36 +11,19 @@ import (
 
 // OWForcasts は、OpenWeatherMapからの天気予報データを格納する
 type OWForcasts struct {
-	Current OWCurrent   `json:"current"`
+	Current OWForcast   `json:"current"`
 	Daily   []OWForcast `json:"daily"`
-}
-
-// OWCurrent は、OpenWeatherMapからの現在の天気データを格納する
-type OWCurrent struct {
-	Dt       int64   `json:"dt"`
-	Temp     float64 `json:"temp"`
-	Humidity int     `json:"humidity"`
-	Weather  []struct {
-		ID          int    `json:"id"`
-		Main        string `json:"main"`
-		Description string `json:"description"`
-		Icon        string `json:"icon"`
-	} `json:"weather"`
 }
 
 // OWForcast は、OpenWeatherMapからの天気予報データを格納する
 type OWForcast struct {
-	Dt   int64 `json:"dt"`
-	Temp struct {
-		Morn  float64 `json:"morn"`
-		Day   float64 `json:"day"`
-		Eve   float64 `json:"eve"`
-		Night float64 `json:"night"`
-		Min   float64 `json:"min"`
-		Max   float64 `json:"max"`
-	} `json:"temp"`
-	Humidity int `json:"humidity"`
-	Weather  []struct {
+	Dt        int64       `json:"dt"`
+	Temp      interface{} `json:"temp"`
+	Pressure  int         `json:"pressure"`
+	Humidity  int         `json:"humidity"`
+	WindSpeed float64     `json:"wind_speed"`
+	WindDeg   int         `json:"wind_deg"`
+	Weather   []struct {
 		ID          int    `json:"id"`
 		Main        string `json:"main"`
 		Description string `json:"description"`
@@ -50,7 +33,7 @@ type OWForcast struct {
 
 // isWeatherRelated は、文字列が天気関係の話かどうかを調べる。
 func (result jumanResult) isWeatherRelated() bool {
-	kws := [...]string{"天気", "気温", "湿度", "暖", "暑", "雨", "晴", "曇", "雪", "風", "嵐", "雹", "湿", "乾", "冷える", "蒸す", "熱帯夜"}
+	kws := [...]string{"天気", "気温", "気圧", "雷", "嵐", "暖", "暑", "雨", "晴", "曇", "雪", "風", "嵐", "雹", "湿", "乾", "冷える", "蒸す", "熱帯夜"}
 	for _, node := range result.Nodes {
 		for _, w := range kws {
 			if strings.Contains(node[11], w) {
@@ -101,7 +84,7 @@ func (result jumanResult) getWeatherQueryDate() (date int) {
 
 // GetLocationWeather は、指定された座標の天気をOpenWeatherMapで取得する。
 // when: -1は今、0は今日、1は明日、2は明後日
-func GetLocationWeather(lat, lng float64, when int) (data interface{}, err error) {
+func GetLocationWeather(lat, lng float64, when int) (data OWForcast, err error) {
 	query := "https://api.openweathermap.org/data/2.5/onecall?lat=" + fmt.Sprintf("%f", lat) + "&lon=" + fmt.Sprintf("%f", lng) + "&units=metric&lang=ja&exclude=hourly,minutely&appid=" + weatherKey
 
 	res, err := http.Get(query)
@@ -155,40 +138,7 @@ func emojifyWeather(telop string) (emojiStr string, err error) {
 }
 
 // forecastMessage は、天気予報を告げるメッセージを返す。
-func forecastMessage(ldata OCResult, wdata interface{}, when int, assertion string, botLoc bool) (msg string) {
-	description := ""
-	tempstr := ""
-	hmdstr := ""
-	if when == -1 {
-		data, _ := wdata.(OWCurrent)
-		description = data.Weather[0].Description
-		tempstr = "、気温 " + fmt.Sprintf("%.1f", data.Temp) + "℃"
-		hmdstr = "、湿度 " + fmt.Sprintf("%d", data.Humidity) + "% "
-	} else {
-		data, _ := wdata.(OWForcast)
-		description = data.Weather[0].Description
-
-		maxT := ""
-		t := data.Temp.Max
-		maxT = "最高 " + fmt.Sprintf("%.1f", t) + "℃"
-
-		minT := ""
-		t = data.Temp.Min
-		minT = "最低 " + fmt.Sprintf("%.1f", t) + "℃"
-
-		cm := " "
-		if maxT != "" || minT != "" {
-			cm = "、"
-		}
-
-		sep := ""
-		if maxT != "" && minT != "" {
-			sep = "・"
-		}
-
-		tempstr = cm + maxT + sep + minT
-		hmdstr = "、湿度 " + fmt.Sprintf("%d", data.Humidity) + "% "
-	}
+func forecastMessage(ldata OCResult, wdata OWForcast, when int, assertion string, botLoc bool) (msg string) {
 	whenstr := ""
 	switch when {
 	case -1:
@@ -206,7 +156,62 @@ func forecastMessage(ldata OCResult, wdata interface{}, when int, assertion stri
 		locStr = getLocString(ldata, false) + "は"
 	}
 
-	msg = whenstr + "の" + locStr + description + tempstr + hmdstr + "みたい" + assertion + "ね"
+	description := wdata.Weather[0].Description
+
+	tempstr := ""
+	if when == -1 {
+		temp, _ := wdata.Temp.(float64)
+		tempstr = "、気温 " + fmt.Sprintf("%.1f", temp) + "℃"
+	} else {
+		maxT := ""
+		temp, _ := wdata.Temp.(map[string]interface{})
+		t, _ := temp["max"].(float64)
+		maxT = "最高 " + fmt.Sprintf("%.1f", t) + "℃"
+
+		minT := ""
+		t = temp["min"].(float64)
+		minT = "最低 " + fmt.Sprintf("%.1f", t) + "℃"
+
+		cm := " "
+		if maxT != "" || minT != "" {
+			cm = "、"
+		}
+
+		sep := ""
+		if maxT != "" && minT != "" {
+			sep = "・"
+		}
+
+		tempstr = cm + maxT + sep + minT
+	}
+
+	hmdstr := "、湿度 " + fmt.Sprintf("%d", wdata.Humidity) + "%、"
+
+	windstr := ""
+	winddeg := wdata.WindDeg
+	switch {
+	case winddeg >= 338 || winddeg < 23:
+		windstr = "北の風 "
+	case winddeg >= 293:
+		windstr = "北西の風 "
+	case winddeg >= 248:
+		windstr = "西の風 "
+	case winddeg >= 203:
+		windstr = "南西の風 "
+	case winddeg >= 158:
+		windstr = "南の風 "
+	case winddeg >= 113:
+		windstr = "南東の風 "
+	case winddeg >= 68:
+		windstr = "東の風 "
+	case winddeg >= 23:
+		windstr = "北東の風 "
+	}
+	windstr = windstr + fmt.Sprintf("%.1f", wdata.WindSpeed) + "m/s、"
+
+	pressurestr := "気圧は " + fmt.Sprintf("%d", wdata.Pressure) + "hPa "
+
+	msg = whenstr + "の" + locStr + description + tempstr + hmdstr + windstr + pressurestr + "みたい" + assertion + "ね"
 
 	return
 }
