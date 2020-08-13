@@ -9,12 +9,6 @@ import (
 	"strings"
 )
 
-// OWForcasts は、OpenWeatherMapからの天気予報データを格納する
-type OWForcasts struct {
-	Current OWForcast   `json:"current"`
-	Daily   []OWForcast `json:"daily"`
-}
-
 // OWForcast は、OpenWeatherMapからの天気予報データを格納する
 type OWForcast struct {
 	Dt        int64       `json:"dt"`
@@ -29,6 +23,12 @@ type OWForcast struct {
 		Description string `json:"description"`
 		Icon        string `json:"icon"`
 	} `json:"weather"`
+}
+
+// OWForcasts は、OpenWeatherMapからの天気予報データを格納する
+type OWForcasts struct {
+	Current OWForcast   `json:"current"`
+	Daily   []OWForcast `json:"daily"`
 }
 
 // isWeatherRelated は、文字列が天気関係の話かどうかを調べる。
@@ -89,7 +89,7 @@ func GetLocationWeather(lat, lng float64, when int) (data OWForcast, err error) 
 
 	res, err := http.Get(query)
 	if err != nil {
-		log.Printf("OpenWeatherMapへのリクエストに失敗しました：%s", err)
+		log.Printf("info: OpenWeatherMapへのリクエストに失敗しました：%s", err)
 		return
 	}
 	if code := res.StatusCode; code >= 400 {
@@ -109,6 +109,9 @@ func GetLocationWeather(lat, lng float64, when int) (data OWForcast, err error) 
 		data = ow.Current
 	} else if len(ow.Daily) > 0 {
 		data = ow.Daily[when]
+	} else {
+		err = fmt.Errorf("OpenWeatherMapからのデータに天気の情報が含まれていません")
+		log.Printf("info: %s", err)
 	}
 
 	return

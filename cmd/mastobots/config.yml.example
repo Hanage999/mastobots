@@ -6,10 +6,10 @@ DBCredentials:  # MySQLデータベース接続のための資格情報（環境
     Server: localhost:3306
     User: rss
 
-OpenCageKey : ***   # Geocodingサービス  (https://opencagedata.com/) のためのAPIキー（要登録）
+OpenCageKey: ***   # Geocodingサービス  (https://opencagedata.com/) のためのAPIキー（要登録）
                     # LiveWithSunをtrueにした場合、opencagedataへのユーザ登録とAPIキー取得が必要です。
 
-OpenWeatherMapKey : ***   # 天気予報サービス  (https://openweathermap.org/) のためのAPIキー（要登録）
+OpenWeatherMapKey: ***   # 天気予報サービス  (https://openweathermap.org/) のためのAPIキー（要登録）
 
 NumConcurrentLangJobs: 4    # 言語解析ジョブの同時実行数の上限（多すぎるとメモリ使いすぎでアプリが落ちる。1〜10を指定可）
 
