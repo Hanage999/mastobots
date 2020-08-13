@@ -131,7 +131,7 @@ func getLocString(data OCResult, simple bool) (str string) {
 		country = "国ではないどこか"
 	}
 
-	nameadrs := [...]*string{&city, &suburb, &town, &neighborhood}
+	nameadrs := [...]*string{&stateDistrict, &county, &city, &suburb, &town, &neighborhood}
 	for _, name := range nameadrs {
 		if str == *name {
 			*name = ""
@@ -142,7 +142,11 @@ func getLocString(data OCResult, simple bool) (str string) {
 		town = ""
 	}
 
-	str = state + stateDistrict + county + city + suburb + town + neighborhood + "（" + country + "）" + "の" + str
+	if str == state {
+		str = country + "の" + str
+	} else {
+		str = state + stateDistrict + county + city + suburb + town + neighborhood + "（" + country + "）" + "の" + str
+	}
 
 	return
 }

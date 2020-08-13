@@ -11,18 +11,21 @@ import (
 
 // OWForcasts は、OpenWeatherMapからの天気予報データを格納する
 type OWForcasts struct {
-	Current struct {
-		Dt       int64   `json:"dt"`
-		Temp     float64 `json:"TEMP"`
-		Humidity int     `json:"humidity"`
-		Weather  []struct {
-			ID          int    `json:"id"`
-			Main        string `json:"main"`
-			Description string `json:"description"`
-			Icon        string `json:"icon"`
-		} `json:"weather"`
-	}
-	Daily []OWForcast `json:"daily"`
+	Current OWCurrent   `json:"current"`
+	Daily   []OWForcast `json:"daily"`
+}
+
+// OWCurrent は、OpenWeatherMapからの現在の天気データを格納する
+type OWCurrent struct {
+	Dt       int64   `json:"dt"`
+	Temp     float64 `json:"temp"`
+	Humidity int     `json:"humidity"`
+	Weather  []struct {
+		ID          int    `json:"id"`
+		Main        string `json:"main"`
+		Description string `json:"description"`
+		Icon        string `json:"icon"`
+	} `json:"weather"`
 }
 
 // OWForcast は、OpenWeatherMapからの天気予報データを格納する
@@ -88,14 +91,17 @@ func (result jumanResult) getWeatherQueryDate() (date int) {
 		case "あさって", "みょうごにち":
 			date = 2
 			return
+		case "いま", "げんざい":
+			date = -1
+			return
 		}
 	}
 	return
 }
 
 // GetLocationWeather は、指定された座標の天気をOpenWeatherMapで取得する。
-// when: 0は今日、1は明日、2は明後日
-func GetLocationWeather(lat, lng float64, when int) (data OWForcast, err error) {
+// when: -1は今、0は今日、1は明日、2は明後日
+func GetLocationWeather(lat, lng float64, when int) (data interface{}, err error) {
 	query := "https://api.openweathermap.org/data/2.5/onecall?lat=" + fmt.Sprintf("%f", lat) + "&lon=" + fmt.Sprintf("%f", lng) + "&units=metric&lang=ja&exclude=hourly,minutely&appid=" + weatherKey
 
 	res, err := http.Get(query)
@@ -116,7 +122,9 @@ func GetLocationWeather(lat, lng float64, when int) (data OWForcast, err error) 
 	}
 	res.Body.Close()
 
-	if len(ow.Daily) > 0 {
+	if when == -1 {
+		data = ow.Current
+	} else if len(ow.Daily) > 0 {
 		data = ow.Daily[when]
 	}
 
@@ -147,29 +155,44 @@ func emojifyWeather(telop string) (emojiStr string, err error) {
 }
 
 // forecastMessage は、天気予報を告げるメッセージを返す。
-func forecastMessage(ldata OCResult, wdata OWForcast, when int, assertion string, botLoc bool) (msg string) {
-	maxT := ""
-	t := wdata.Temp.Max
-	maxT = "最高 " + fmt.Sprintf("%.1f", t) + "℃"
+func forecastMessage(ldata OCResult, wdata interface{}, when int, assertion string, botLoc bool) (msg string) {
+	description := ""
+	tempstr := ""
+	hmdstr := ""
+	if when == -1 {
+		data, _ := wdata.(OWCurrent)
+		description = data.Weather[0].Description
+		tempstr = "、気温 " + fmt.Sprintf("%.1f", data.Temp) + "℃"
+		hmdstr = "、湿度 " + fmt.Sprintf("%d", data.Humidity) + "% "
+	} else {
+		data, _ := wdata.(OWForcast)
+		description = data.Weather[0].Description
 
-	minT := ""
-	t = wdata.Temp.Min
-	minT = "最低 " + fmt.Sprintf("%.1f", t) + "℃"
+		maxT := ""
+		t := data.Temp.Max
+		maxT = "最高 " + fmt.Sprintf("%.1f", t) + "℃"
 
-	cm := " "
-	spc := ""
-	if maxT != "" || minT != "" {
-		cm = "、"
-		spc = " "
+		minT := ""
+		t = data.Temp.Min
+		minT = "最低 " + fmt.Sprintf("%.1f", t) + "℃"
+
+		cm := " "
+		if maxT != "" || minT != "" {
+			cm = "、"
+		}
+
+		sep := ""
+		if maxT != "" && minT != "" {
+			sep = "・"
+		}
+
+		tempstr = cm + maxT + sep + minT
+		hmdstr = "、湿度 " + fmt.Sprintf("%d", data.Humidity) + "% "
 	}
-
-	sep := ""
-	if maxT != "" && minT != "" {
-		sep = "・"
-	}
-
 	whenstr := ""
 	switch when {
+	case -1:
+		whenstr = "今現在"
 	case 0:
 		whenstr = "今日"
 	case 1:
@@ -183,7 +206,7 @@ func forecastMessage(ldata OCResult, wdata OWForcast, when int, assertion string
 		locStr = getLocString(ldata, false) + "は"
 	}
 
-	msg = whenstr + "の" + locStr + wdata.Weather[0].Description + cm + maxT + sep + minT + "、湿度 " + fmt.Sprintf("%d", wdata.Humidity) + "%" + spc + "みたい" + assertion + "ね"
+	msg = whenstr + "の" + locStr + description + tempstr + hmdstr + "みたい" + assertion + "ね"
 
 	return
 }
