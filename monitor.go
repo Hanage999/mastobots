@@ -252,6 +252,9 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 			unknownmsg = "ちょっと何言ってるか分からない" + bot.Assertion + "。でも、"
 			locdata = bot.LocInfo
 		}
+		if len(lc) == 0 {
+			unknownmsg = ""
+		}
 		wdata, err := GetLocationWeather(locdata.Geometry.Lat, locdata.Geometry.Lng, dt)
 		if err != nil {
 			log.Printf("info: %s が天気の取得に失敗しました", bot.Name)
