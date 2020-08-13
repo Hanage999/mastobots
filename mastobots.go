@@ -17,8 +17,8 @@ var (
 	revision      = "0"
 	maxRetry      = 5
 	retryInterval = time.Duration(5) * time.Second
-	locationCodes map[string]interface{}
 	openCageKey   = ""
+	weatherKey    = ""
 )
 
 // Initialize は、config.ymlに従ってbotとデータベース接続を初期化する。
@@ -50,12 +50,6 @@ func Initialize() (bots []*Persona, db DB, err error) {
 		}
 	}
 
-	// 天気予報の地域コード読み込み
-	locationCodes, err = getLocationCodes()
-	if err != nil {
-		return
-	}
-
 	var appName string
 	var apps []*MastoApp
 	var cr map[string]string
@@ -71,6 +65,7 @@ func Initialize() (bots []*Persona, db DB, err error) {
 	}
 	appName = conf.GetString("MastoAppName")
 	openCageKey = conf.GetString("OpenCageKey")
+	weatherKey = conf.GetString("OpenWeatherMapKey")
 	nOfJobs := conf.GetInt("NumConcurrentLangJobs")
 	if nOfJobs <= 0 {
 		nOfJobs = 1
@@ -173,7 +168,7 @@ func ActivateBots(bots []*Persona, db DB, p int) (err error) {
 	for _, bot := range bots {
 		if bot.LivesWithSun {
 			time.Sleep(1001 * time.Millisecond)
-			bot.LocInfo, err = getLocInfo(openCageKey, bot.Latitude, bot.Longitude)
+			bot.LocInfo, err = getLocDataFromCoordinates(openCageKey, bot.Latitude, bot.Longitude)
 			if err != nil {
 				log.Printf("alert: 所在地情報の設定に失敗しました：%s", err)
 				return

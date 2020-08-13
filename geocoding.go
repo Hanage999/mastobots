@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -19,12 +20,15 @@ type OCResult struct {
 		} `json:"timezone"`
 	} `json:"annotations"`
 	Components map[string]string `json:"components"`
-	Formatted  string            `json:"formatted"`
+	Geometry   struct {
+		Lat float64 `json:"lat"`
+		Lng float64 `json:"lng"`
+	} `json:"geometry"`
 }
 
 // OCResults は、OpenCageからのデータを格納する
 type OCResults struct {
-	Results []OCResult
+	Results []OCResult `json:"results"`
 }
 
 // SunInfo は、日の入りと日の出時刻を格納する
@@ -37,7 +41,7 @@ type SunInfo struct {
 }
 
 // getLocInfo は、botの座標から所在地情報を取得して格納する
-func getLocInfo(key string, lat, lng float64) (result OCResult, err error) {
+func getLocDataFromCoordinates(key string, lat, lng float64) (result OCResult, err error) {
 	query := "https://api.opencagedata.com/geocode/v1/json?q=" + fmt.Sprint(lat) + "%2C" + fmt.Sprint(lng) + "&key=" + key + "&language=ja&pretty=1"
 
 	res, err := http.Get(query)
@@ -59,6 +63,86 @@ func getLocInfo(key string, lat, lng float64) (result OCResult, err error) {
 	res.Body.Close()
 
 	result = oc.Results[0]
+
+	return
+}
+
+// getLocDataFromString は、OpenCageDataから地名に該当する座標データを返す
+func getLocDataFromString(key string, loc []string) (data OCResult, err error) {
+	area := strings.Join(loc, " ")
+	areaq := url.QueryEscape(area)
+	query := "https://api.opencagedata.com/geocode/v1/json?q=" + areaq + "&key=" + key + "&language=ja&pretty=1"
+
+	res, err := http.Get(query)
+	if err != nil {
+		log.Printf("OpenCageへのリクエストに失敗しました：%s", err)
+		return
+	}
+	if code := res.StatusCode; code >= 400 {
+		err = fmt.Errorf("OpenCageへの接続エラーです(%d)", code)
+		log.Printf("info: %s", err)
+		return
+	}
+	var oc OCResults
+	if err = json.NewDecoder(res.Body).Decode(&oc); err != nil {
+		log.Printf("info: OpenCageからのレスポンスがデコードできませんでした：%s", err)
+		res.Body.Close()
+		return
+	}
+	res.Body.Close()
+
+	if len(oc.Results) > 0 {
+		data = oc.Results[0]
+	} else {
+		err = fmt.Errorf("そんな地名おまへんがな")
+	}
+
+	return
+}
+
+// getLocString は、現在地の文字列を返す
+func getLocString(data OCResult, simple bool) (str string) {
+	tp := data.Components["_type"]
+	str = data.Components[tp]
+
+	country := data.Components["country"] + data.Annotations.Flag
+	state := data.Components["state"]
+	stateDistrict := data.Components["state_district"]
+	county := data.Components["county"]
+	city := data.Components["city"]
+	suburb := data.Components["suburb"]
+	town := data.Components["town"]
+	neighborhood := data.Components["neighborhood"]
+	unknown := data.Components["unknown"]
+
+	names := [...]string{unknown, neighborhood, town, suburb, city}
+	for _, name := range names {
+		if str != "" {
+			break
+		}
+		str = name
+	}
+
+	if simple {
+		return
+	}
+
+	if country == "" {
+		country = "国ではないどこか"
+	}
+
+	nameadrs := [...]*string{&city, &suburb, &town, &neighborhood}
+	for _, name := range nameadrs {
+		if str == *name {
+			*name = ""
+		}
+	}
+
+	if town == city {
+		town = ""
+	}
+
+	str = state + stateDistrict + county + city + suburb + town + neighborhood + "（" + country + "）" + "の" + str
 
 	return
 }
