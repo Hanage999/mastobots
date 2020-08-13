@@ -70,7 +70,9 @@ func (result jumanResult) getWeatherQueryLocation() (loc []string) {
 	for _, node := range result.Nodes {
 		// 5番目の要素は品詞詳細、11番目の要素は諸情報
 		if node[5] == "地名" || node[5] == "人名" || strings.Contains(node[11], "地名") || strings.Contains(node[11], "場所") {
-			loc = append(loc, node[0])
+			if node[0] != "周辺" {
+				loc = append(loc, node[0])
+			}
 		}
 	}
 	return
@@ -145,7 +147,7 @@ func emojifyWeather(telop string) (emojiStr string, err error) {
 }
 
 // forecastMessage は、天気予報を告げるメッセージを返す。
-func forecastMessage(ldata OCResult, wdata OWForcast, when int, assertion string) (msg string) {
+func forecastMessage(ldata OCResult, wdata OWForcast, when int, assertion string, botLoc bool) (msg string) {
 	maxT := ""
 	t := wdata.Temp.Max
 	maxT = "最高 " + fmt.Sprintf("%.1f", t) + "℃"
@@ -176,44 +178,12 @@ func forecastMessage(ldata OCResult, wdata OWForcast, when int, assertion string
 		whenstr = "明後日"
 	}
 
-	msg = whenstr + "の" + getLocString(ldata, false) + "は" + wdata.Weather[0].Description + cm + maxT + sep + minT + "、湿度 " + fmt.Sprintf("%d", wdata.Humidity) + "%" + spc + "みたい" + assertion + "ね"
-
-	return
-}
-
-// forecastMorningMessage は、起きがけの天気予報メッセージを返す。
-func forecastMorningMessage(wdata OWForcast, when int, assertion string) (msg string) {
-	maxT := ""
-	t := wdata.Temp.Max
-	maxT = "最高 " + fmt.Sprintf("%f", t) + "℃"
-
-	minT := ""
-	t = wdata.Temp.Min
-	minT = "最低 " + fmt.Sprintf("%f", t) + "℃"
-
-	cm := " "
-	spc := ""
-	if maxT != "" || minT != "" {
-		cm = "、"
-		spc = " "
+	locStr := "このあたりは"
+	if botLoc == false {
+		locStr = getLocString(ldata, false) + "は"
 	}
 
-	sep := ""
-	if maxT != "" && minT != "" {
-		sep = "・"
-	}
-
-	whenstr := ""
-	switch when {
-	case 0:
-		whenstr = "今日"
-	case 1:
-		whenstr = "明日"
-	case 2:
-		whenstr = "明後日"
-	}
-
-	msg = whenstr + "の" + "このあたりは" + wdata.Weather[0].Description + cm + maxT + sep + minT + "、湿度 " + fmt.Sprintf("%d", wdata.Humidity) + "%" + spc + "みたい" + assertion + "ね"
+	msg = whenstr + "の" + locStr + wdata.Weather[0].Description + cm + maxT + sep + minT + "、湿度 " + fmt.Sprintf("%d", wdata.Humidity) + "%" + spc + "みたい" + assertion + "ね"
 
 	return
 }

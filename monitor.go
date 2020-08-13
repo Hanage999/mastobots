@@ -248,9 +248,11 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 		}
 		locdata, err := getLocDataFromString(openCageKey, lc)
 		unknownmsg := ""
+		botLoc := false
 		if err != nil {
 			unknownmsg = "ちょっと何言ってるか分からない" + bot.Assertion + "。でも、"
 			locdata = bot.LocInfo
+			botLoc = true
 		}
 		if len(lc) == 0 {
 			unknownmsg = ""
@@ -260,7 +262,7 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 			log.Printf("info: %s が天気の取得に失敗しました", bot.Name)
 			return err
 		}
-		msg = "@" + account.Acct + " " + unknownmsg + forecastMessage(locdata, wdata, dt, bot.Assertion)
+		msg = "@" + account.Acct + " " + unknownmsg + forecastMessage(locdata, wdata, dt, bot.Assertion, botLoc)
 		if msg != "" {
 			toot := mastodon.Toot{Status: msg, Visibility: status.Visibility, InReplyToID: status.ID}
 			if err = bot.post(ctx, toot); err != nil {

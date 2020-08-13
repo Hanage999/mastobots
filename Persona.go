@@ -162,7 +162,7 @@ func (bot *Persona) daylife(ctx context.Context, db DB, sleep time.Duration, act
 				if err != nil {
 					log.Printf("info: %s が天気予報を取ってこれませんでした", bot.Name)
 				} else {
-					weatherStr = "。" + forecastMorningMessage(data, 0, bot.Assertion)
+					weatherStr = "。" + forecastMessage(bot.LocInfo, data, 0, bot.Assertion, true)
 				}
 				toot := mastodon.Toot{Status: wakeWithSun + "おはようございます" + bot.Assertion + weatherStr}
 				if err := bot.post(newCtx, toot); err != nil {
