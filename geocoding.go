@@ -110,12 +110,13 @@ func getLocString(data OCResult, simple bool) (str string) {
 	stateDistrict := data.Components["state_district"]
 	county := data.Components["county"]
 	city := data.Components["city"]
+	cityDistrict := data.Components["city_district"]
 	suburb := data.Components["suburb"]
 	town := data.Components["town"]
 	neighborhood := data.Components["neighborhood"]
 	unknown := data.Components["unknown"]
 
-	names := [...]string{unknown, neighborhood, town, suburb, city}
+	names := [...]string{unknown, neighborhood, town, suburb, cityDistrict, city}
 	for _, name := range names {
 		if str != "" {
 			break
@@ -131,7 +132,7 @@ func getLocString(data OCResult, simple bool) (str string) {
 		country = "国ではないどこか"
 	}
 
-	nameadrs := [...]*string{&stateDistrict, &county, &city, &suburb, &town, &neighborhood}
+	nameadrs := [...]*string{&stateDistrict, &county, &city, &cityDistrict, &suburb, &town, &neighborhood}
 	for _, name := range nameadrs {
 		if str == *name {
 			*name = ""
@@ -145,7 +146,7 @@ func getLocString(data OCResult, simple bool) (str string) {
 	if str == state {
 		str = country + "の" + str
 	} else {
-		str = state + stateDistrict + county + city + suburb + town + neighborhood + "（" + country + "）" + "の" + str
+		str = state + stateDistrict + county + city + cityDistrict + suburb + town + neighborhood + "（" + country + "）" + "の" + str
 	}
 
 	return
