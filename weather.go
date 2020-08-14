@@ -56,7 +56,7 @@ func (result jumanResult) getWeatherQueryLocation() (loc []string) {
 	for _, node := range result.Nodes {
 		// 5番目の要素は品詞詳細、11番目の要素は諸情報
 		if node[5] == "地名" || node[5] == "人名" || strings.Contains(node[11], "地名") || strings.Contains(node[11], "場所") {
-			if node[0] != "周辺" {
+			if node[0] != "周辺" && node[0] != "場所" && node[0] != "公園" && node[1] != "ところ" && node[1] != "あたり" && node[1] != "へん" && node[0] != "地域" && node[0] != "地区" && node[0] != "県" && node[0] != "市" && node[0] != "町" && node[0] != "村" && node[0] != "府" && node[0] != "州" && node[0] != "郡" && node[0] != "地方" {
 				loc = append(loc, node[0])
 			}
 		}
