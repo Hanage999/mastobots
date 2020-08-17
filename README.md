@@ -23,7 +23,7 @@ MySQLデータベースに保存された日本語のRSSアイテムをJuman++�
 + トゥートの間隔、コメント、好みの単語などをカスタマイズ可能。
 + 「いい（＋bot固有の語尾）」とメンションすると、背中を押したり押さなかったりしてくれる。
 + botに「フォロー」を含んだメンションをすると、botがフォローしてくる。
-+ botに場所と時間（今、今日、明日、明後日）を指定して天気を尋ねると、[OpenWeatherMap](https://openweathermap.org)からの情報を教えてくれる。
++ botに場所と時間（今、今日、明日、明後日）を指定して天気を尋ねると、[OpenWeatherMap](https://openweathermap.org)からの情報を教えてくれる。「体感」という言葉を含めて尋ねると体感気温を返してくる。
 + 寝る。寝ている間はトゥートも反応もしない。就寝時刻と起床時刻は自由に設定可。二つを同時刻に設定すれば、寝ない。
 + 設定ファイルでLivesWithSunをtrueに設定すると、LatitudeとLongitudeで指定した地点での太陽の出入り時刻に応じて寝起きする。逆ジオコーディングデータは[OpenCage Geocoder](https://opencagedata.com/api)から、時刻は[Sunrise Sunset](https://sunrise-sunset.org/api)からそれぞれ取得。
 + 設定ファイルでRandomFrequencyをゼロ以上にし、かつRandomTootsに１つ以上の文字列を指定すると、不定期に指定文字列のいずれかを呟く。（この機能を使わない場合は、RandomFrequencyはゼロに設定し、かつRandomTootsには空の配列要素を１つ設定してください）

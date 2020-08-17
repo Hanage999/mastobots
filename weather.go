@@ -178,10 +178,10 @@ func forecastMessage(ldata OCResult, wdata OWForcast, when int, assertion string
 	if when == -1 {
 		if fl {
 			feelslike, _ := wdata.FeelsLike.(float64)
-			tempstr = fmt.Sprintf("体感 %.1f℃）、", feelslike)
+			tempstr = fmt.Sprintf("体感 %.1f℃、", feelslike)
 		} else {
 			temp, _ := wdata.Temp.(float64)
-			tempstr = fmt.Sprintf("気温 %.1f℃）、", temp)
+			tempstr = fmt.Sprintf("気温 %.1f℃、", temp)
 		}
 	} else {
 		mornT := ""
