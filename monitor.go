@@ -242,7 +242,7 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 	}
 
 	if jm.isWeatherRelated() {
-		lc, dt, err := jm.judgeWeatherRequest()
+		lc, dt, fl, err := jm.judgeWeatherRequest()
 		if err != nil {
 			return err
 		}
@@ -262,7 +262,7 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 			log.Printf("info: %s が天気の取得に失敗しました", bot.Name)
 			return err
 		}
-		msg = "@" + account.Acct + " " + unknownmsg + forecastMessage(locdata, wdata, dt, bot.Assertion, botLoc)
+		msg = "@" + account.Acct + " " + unknownmsg + forecastMessage(locdata, wdata, dt, bot.Assertion, botLoc, fl)
 		if msg != "" {
 			toot := mastodon.Toot{Status: msg, Visibility: status.Visibility, InReplyToID: status.ID}
 			if err = bot.post(ctx, toot); err != nil {

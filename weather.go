@@ -13,6 +13,7 @@ import (
 type OWForcast struct {
 	Dt        int64       `json:"dt"`
 	Temp      interface{} `json:"temp"`
+	FeelsLike interface{} `json:"feels_like"`
 	Pressure  int         `json:"pressure"`
 	Humidity  int         `json:"humidity"`
 	WindSpeed float64     `json:"wind_speed"`
@@ -45,9 +46,10 @@ func (result jumanResult) isWeatherRelated() bool {
 }
 
 // judgeWeatherRequest は、天気の要望の内容を判断する
-func (result jumanResult) judgeWeatherRequest() (lc []string, dt int, err error) {
+func (result jumanResult) judgeWeatherRequest() (lc []string, dt int, fl bool, err error) {
 	lc = result.getWeatherQueryLocation()
 	dt = result.getWeatherQueryDate()
+	fl = result.getWeatherQueryTempType()
 	return
 }
 
@@ -56,7 +58,7 @@ func (result jumanResult) getWeatherQueryLocation() (loc []string) {
 	for _, node := range result.Nodes {
 		// 5番目の要素は品詞詳細、11番目の要素は諸情報
 		if node[5] == "地名" || node[5] == "人名" || strings.Contains(node[11], "地名") || strings.Contains(node[11], "場所") {
-			if node[0] != "周辺" && node[0] != "場所" && node[0] != "公園" && node[1] != "ところ" && node[1] != "あたり" && node[1] != "へん" && node[0] != "地域" && node[0] != "地区" && node[0] != "県" && node[0] != "市" && node[0] != "町" && node[0] != "村" && node[0] != "府" && node[0] != "州" && node[0] != "郡" && node[0] != "地方" {
+			if node[0] != "周辺" && node[0] != "場所" && node[0] != "公園" && node[1] != "ところ" && node[1] != "あたり" && node[1] != "へん" && node[0] != "地域" && node[0] != "地区" && node[0] != "県" && node[0] != "市" && node[0] != "町" && node[0] != "村" && node[0] != "府" && node[0] != "州" && node[0] != "郡" && node[0] != "地方" && node[0] != "どうなん" {
 				loc = append(loc, node[0])
 			}
 		}
@@ -76,6 +78,17 @@ func (result jumanResult) getWeatherQueryDate() (date int) {
 			return
 		case "いま", "げんざい":
 			date = -1
+			return
+		}
+	}
+	return
+}
+
+// getWeatherQueryTempType は、天気情報の要望トゥートの形態素解析結果に日の指定があればそれを返す。
+func (result jumanResult) getWeatherQueryTempType() (fl bool) {
+	for _, node := range result.Nodes {
+		if node[0] == "体感" {
+			fl = true
 			return
 		}
 	}
@@ -141,7 +154,7 @@ func emojifyWeather(telop string) (emojiStr string, err error) {
 }
 
 // forecastMessage は、天気予報を告げるメッセージを返す。
-func forecastMessage(ldata OCResult, wdata OWForcast, when int, assertion string, botLoc bool) (msg string) {
+func forecastMessage(ldata OCResult, wdata OWForcast, when int, assertion string, botLoc bool, fl bool) (msg string) {
 	whenstr := ""
 	switch when {
 	case -1:
@@ -159,36 +172,47 @@ func forecastMessage(ldata OCResult, wdata OWForcast, when int, assertion string
 		locStr = getLocString(ldata, false) + "は"
 	}
 
-	description := wdata.Weather[0].Description
+	description := wdata.Weather[0].Description + "、"
 
 	tempstr := ""
 	if when == -1 {
-		temp, _ := wdata.Temp.(float64)
-		tempstr = "、気温 " + fmt.Sprintf("%.1f", temp) + "℃"
+		if fl {
+			feelslike, _ := wdata.FeelsLike.(float64)
+			tempstr = fmt.Sprintf("体感 %.1f℃）、", feelslike)
+		} else {
+			temp, _ := wdata.Temp.(float64)
+			tempstr = fmt.Sprintf("気温 %.1f℃）、", temp)
+		}
 	} else {
-		maxT := ""
-		temp, _ := wdata.Temp.(map[string]interface{})
-		t, _ := temp["max"].(float64)
-		maxT = "最高 " + fmt.Sprintf("%.1f", t) + "℃"
+		mornT := ""
 
-		minT := ""
-		t = temp["min"].(float64)
-		minT = "最低 " + fmt.Sprintf("%.1f", t) + "℃"
-
-		cm := " "
-		if maxT != "" || minT != "" {
-			cm = "、"
+		var temp map[string]interface{}
+		if fl {
+			temp, _ = wdata.FeelsLike.(map[string]interface{})
+			mornT = "体感で"
+		} else {
+			temp, _ = wdata.Temp.(map[string]interface{})
 		}
 
-		sep := ""
-		if maxT != "" && minT != "" {
-			sep = "・"
-		}
+		t, _ := temp["morn"].(float64)
+		mornT = mornT + fmt.Sprintf("朝 %.1f℃・", t)
 
-		tempstr = cm + maxT + sep + minT
+		dayT := ""
+		t = temp["day"].(float64)
+		dayT = fmt.Sprintf("日中 %.1f℃・", t)
+
+		eveT := ""
+		t = temp["eve"].(float64)
+		eveT = fmt.Sprintf("夕方 %.1f℃・", t)
+
+		nightT := ""
+		t = temp["night"].(float64)
+		nightT = fmt.Sprintf("夜 %.1f℃、", t)
+
+		tempstr = mornT + dayT + eveT + nightT
 	}
 
-	hmdstr := "、湿度 " + fmt.Sprintf("%d", wdata.Humidity) + "%、"
+	hmdstr := fmt.Sprintf("湿度 %d%%、", wdata.Humidity)
 
 	windstr := ""
 	winddeg := wdata.WindDeg
@@ -210,9 +234,9 @@ func forecastMessage(ldata OCResult, wdata OWForcast, when int, assertion string
 	case winddeg >= 23:
 		windstr = "北東の風 "
 	}
-	windstr = windstr + fmt.Sprintf("%.1f", wdata.WindSpeed) + "m/s、"
+	windstr = windstr + fmt.Sprintf("%.1fm/s、", wdata.WindSpeed)
 
-	pressurestr := "気圧は " + fmt.Sprintf("%d", wdata.Pressure) + "hPa "
+	pressurestr := fmt.Sprintf("気圧は %dhPa", wdata.Pressure)
 
 	msg = whenstr + "の" + locStr + description + tempstr + hmdstr + windstr + pressurestr + "みたい" + assertion + "ね"
 
