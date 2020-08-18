@@ -84,7 +84,7 @@ func (result jumanResult) getWeatherQueryDate() (date int) {
 	return
 }
 
-// getWeatherQueryTempType は、天気情報の要望トゥートの形態素解析結果に日の指定があればそれを返す。
+// getWeatherQueryTempType は、天気情報の要望トゥートの形態素解析結果に体感温度表示の指定があればそれを返す。
 func (result jumanResult) getWeatherQueryTempType() (fl bool) {
 	for _, node := range result.Nodes {
 		if node[0] == "体感" {
