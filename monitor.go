@@ -194,6 +194,11 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 		return
 	}
 
+	// メンションありがとうのふぁぼ
+	if err = bot.fav(ctx, status.ID); err != nil {
+		log.Printf("info: %s がふぁぼを諦めました", bot.Name)
+	}
+
 	var jm jumanResult
 	var ok bool
 	if jm, ok = res.(jumanResult); !ok {
