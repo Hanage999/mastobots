@@ -3,5 +3,6 @@ cmd/**/*.txt
 cmd/**/*.json
 cmd/test
 cmd/mastobots/mastobots
+cmd/mastobots/mastobotsenv
 *.backup
 .DS_Store
