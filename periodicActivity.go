@@ -62,10 +62,15 @@ func (bot *Persona) newsToot(ctx context.Context, stock int, db DB) (err error) 
 	}
 
 	tf := float64(bot.Awake) / float64(time.Duration(bot.Interval)*time.Minute)
-	tn := int(math.Ceil(float64(stock) / tf))
+	bst := 1
+	if stock > 10 {
+		bst = 2
+	}
+	tn := int(math.Ceil(float64(stock)/tf)) * bst
 	if tn > 10 {
 		tn = 10
 	}
+
 	for i := 0; i < tn; i++ {
 		toot, item, err := bot.createNewsToot(db)
 		if err != nil {
