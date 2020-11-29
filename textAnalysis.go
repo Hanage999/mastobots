@@ -49,7 +49,7 @@ func (result proseResult) length() int {
 func (result jumanResult) candidates() (cds []candidate) {
 	cds = make([]candidate, 0)
 	for _, node := range result.Nodes {
-		if node[3] != "名詞" || node[5] == "数詞" {
+		if node[3] != "名詞" || node[5] == "数詞" || node[5] == "形式名詞" {
 			continue
 		}
 		cd := candidate{node[0], string(getRuneAt(node[1], 0)), rand.Intn(2000)}
