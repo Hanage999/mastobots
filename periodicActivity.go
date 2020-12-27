@@ -105,7 +105,6 @@ func (bot *Persona) createNewsToot(db DB) (toot mastodon.Toot, item Item, err er
 	msg, err := bot.messageFromItem(item)
 	if err != nil {
 		log.Printf("info: %s がアイテムid %d から投稿文の作成に失敗しました：%s", bot.Name, item.ID, err)
-		return
 	}
 
 	if msg != "" {
@@ -141,9 +140,10 @@ func (bot *Persona) messageFromItem(item Item) (msg string, err error) {
 	// トゥートに使う単語の選定
 	cds := result.candidates()
 	best, err := bestCandidate(cds)
+	noword := false
 	if err != nil {
-		log.Printf("info: 単語選定に失敗した本文：%s", txt)
-		return
+		log.Printf("info: %s がアイテムid %d から投稿文の作成に失敗しました。単語選定に失敗した本文：%s", bot.Name, item.ID, txt)
+		noword = true
 	}
 
 	// ハッシュタグ生成
@@ -154,13 +154,24 @@ func (bot *Persona) messageFromItem(item Item) (msg string, err error) {
 	hashtagStr = strings.TrimSpace(hashtagStr)
 
 	// コメントの生成
-	idx := 0
-	if len(bot.Comments) > 1 {
-		idx = rand.Intn(len(bot.Comments))
+	if noword {
+		idx := rand.Intn(len(bot.RandomToots))
+		msg = bot.RandomToots[idx]
+		if msg == "" {
+			log.Printf("info: %s がランダムな投稿文の作成にも失敗しました", bot.Name)
+			return
+		}
+		msg = msg + nuance()
+		err = nil
+	} else {
+		idx := 0
+		if len(bot.Comments) > 1 {
+			idx = rand.Intn(len(bot.Comments))
+		}
+		msg = bot.Comments[idx]
+		msg = strings.Replace(msg, "_keyword1_", best.surface, -1)
+		msg = strings.Replace(msg, "_topkana1_", best.firstKana, -1)
 	}
-	msg = bot.Comments[idx]
-	msg = strings.Replace(msg, "_keyword1_", best.surface, -1)
-	msg = strings.Replace(msg, "_topkana1_", best.firstKana, -1)
 
 	// リンクとハッシュタグを追加
 	msg += "\n\n" + item.Title + " " + item.URL + "\n\n" + hashtagStr
