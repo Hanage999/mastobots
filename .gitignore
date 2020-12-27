@@ -6,3 +6,5 @@ cmd/mastobots/mastobots
 cmd/mastobots/mastobotsenv
 *.backup
 .DS_Store
+go.mod
+foo.go
