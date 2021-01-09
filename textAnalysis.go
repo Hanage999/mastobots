@@ -162,15 +162,14 @@ func parseJapanese(text string) (result jumanResult, err error) {
 	// Juman++で形態素解析
 	cmd := exec.Command("jumanpp")
 	cmd.Stdin = strings.NewReader(safeStr)
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	if err = cmd.Run(); err != nil {
+	out, err := cmd.Output()
+	if err != nil {
 		log.Printf("info: 形態素解析器が正常に起動できませんでした：%s", err)
 		return
 	}
 
 	// 解析結果をスライスに整理（半角スペース等は除外）
-	nodeStrs := strings.Split(out.String(), "\n")
+	nodeStrs := strings.Split(string(out), "\n")
 	nodes := make([][]string, 0)
 	strange := false
 	for _, s := range nodeStrs {
