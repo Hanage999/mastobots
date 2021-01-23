@@ -132,10 +132,11 @@ func getLocString(data OCResult, simple bool) (str string) {
 		country = "国ではないどこか"
 	}
 
+	countryKakko := ""
 	if strings.Contains(country, "日本") {
 		country = ""
 	} else {
-		country = "（" + country + "）"
+		countryKakko = "（" + country + "）"
 	}
 
 	nameadrs := [...]*string{&stateDistrict, &county, &city, &cityDistrict, &suburb, &town, &neighborhood}
@@ -150,9 +151,11 @@ func getLocString(data OCResult, simple bool) (str string) {
 	}
 
 	if str == state {
-		str = country + "の" + str
+		if country != "" {
+			str = country + "の" + str
+		}
 	} else {
-		str = state + stateDistrict + county + city + cityDistrict + suburb + town + neighborhood + country + "の" + str
+		str = state + stateDistrict + county + city + cityDistrict + suburb + town + neighborhood + countryKakko + "の" + str
 	}
 
 	return
