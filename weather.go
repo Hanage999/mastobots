@@ -34,7 +34,7 @@ type OWForcasts struct {
 
 // isWeatherRelated は、文字列が天気関係の話かどうかを調べる。
 func (result jumanResult) isWeatherRelated() bool {
-	kws := [...]string{"天気", "気温", "気圧", "雷", "嵐", "暖", "暑", "雨", "晴", "曇", "雪", "風", "嵐", "雹", "湿", "乾", "冷える", "蒸す", "熱帯夜"}
+	kws := [...]string{"天気", "気温", "気圧", "雷", "嵐", "暖", "暑", "雨", "晴", "曇", "雪", "風", "嵐", "雹", "湿", "乾", "冷える", "蒸す", "熱帯夜", "何度"}
 	for _, node := range result.Nodes {
 		for _, w := range kws {
 			if strings.Contains(node[11], w) {
