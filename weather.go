@@ -172,7 +172,7 @@ func forecastMessage(ldata OCResult, wdata OWForcast, when int, assertion string
 		locStr = getLocString(ldata, false) + "は"
 	}
 
-	description := wdata.Weather[0].Description + "、"
+	description := strings.Replace(wdata.Weather[0].Description, "適度な", "", -1) + "、"
 
 	tempstr := ""
 	if when == -1 {
