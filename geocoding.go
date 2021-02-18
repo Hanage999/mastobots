@@ -155,7 +155,10 @@ func getLocString(data OCResult, simple bool) (str string) {
 			str = country + "の" + str
 		}
 	} else {
-		str = state + stateDistrict + county + city + cityDistrict + suburb + town + neighborhood + countryKakko + "の" + str
+		details := state + stateDistrict + county + city + cityDistrict + suburb + town + neighborhood + countryKakko
+		if details != "" {
+			str = details + "の" + str
+		}
 	}
 
 	return
