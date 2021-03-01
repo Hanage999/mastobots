@@ -131,7 +131,7 @@ func (bot *Persona) messageFromItem(item Item) (msg string, err error) {
 
 	log.Printf("trace: id %d 形態素解析に食わせるcontent：%s", item.ID, txt)
 
-	result, err := parse(bot.JobPool, txt)
+	result, err := parse(bot.commonSettings.langJobPool, txt)
 	if err != nil {
 		log.Printf("info: %s がトゥート時のサマリーのパースに失敗しました", bot.Name)
 		return

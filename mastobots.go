@@ -13,13 +13,17 @@ import (
 )
 
 var (
-	version       = "1"
-	revision      = "0"
-	maxRetry      = 5
-	retryInterval = time.Duration(5) * time.Second
-	openCageKey   = ""
-	weatherKey    = ""
+	version  = "1"
+	revision = "0"
 )
+
+type commonSettings struct {
+	maxRetry      int
+	retryInterval time.Duration
+	openCageKey   string
+	weatherKey    string
+	langJobPool   chan int
+}
 
 // Initialize は、config.ymlに従ってbotとデータベース接続を初期化する。
 func Initialize() (bots []*Persona, db DB, err error) {
@@ -64,15 +68,22 @@ func Initialize() (bots []*Persona, db DB, err error) {
 		return nil, db, err
 	}
 	appName = conf.GetString("MastoAppName")
-	openCageKey = conf.GetString("OpenCageKey")
-	weatherKey = conf.GetString("OpenWeatherMapKey")
+	conf.UnmarshalKey("Personae", &bots)
+	var cmn commonSettings
+	cmn.maxRetry = 5
+	cmn.retryInterval = time.Duration(5) * time.Second
+	cmn.openCageKey = conf.GetString("OpenCageKey")
+	cmn.weatherKey = conf.GetString("OpenWeatherMapKey")
 	nOfJobs := conf.GetInt("NumConcurrentLangJobs")
 	if nOfJobs <= 0 {
 		nOfJobs = 1
 	} else if nOfJobs > 10 {
 		nOfJobs = 10
 	}
-	conf.UnmarshalKey("Personae", &bots)
+	cmn.langJobPool = make(chan int, nOfJobs)
+	for _, bot := range bots {
+		bot.commonSettings = &cmn
+	}
 	cr = conf.GetStringMapString("DBCredentials")
 
 	// マストドンアプリ設定ファイル読み込み
@@ -114,14 +125,12 @@ func Initialize() (bots []*Persona, db DB, err error) {
 		log.Printf("info: 設定ファイルを更新しました")
 	}
 
-	// botの初期化（複数設定可）
-	jpl := make(chan int, nOfJobs)
+	// botをMastodonサーバに接続
 	for _, bot := range bots {
-		if err := initPersona(apps, bot); err != nil {
-			log.Printf("alert: %s を初期化できませんでした", bot.Name)
+		if err := connectPersona(apps, bot); err != nil {
+			log.Printf("alert: %s をMastodonサーバに接続できませんでした", bot.Name)
 			return nil, db, err
 		}
-		bot.JobPool = jpl
 	}
 
 	// データベースへの接続
@@ -147,6 +156,19 @@ func Initialize() (bots []*Persona, db DB, err error) {
 		bot.DBID = id
 	}
 
+	// botの住処を登録
+	for _, bot := range bots {
+		if bot.LivesWithSun {
+			log.Printf("info: %s の所在地を設定しています……", bot.Name)
+			time.Sleep(1001 * time.Millisecond)
+			bot.LocInfo, err = getLocDataFromCoordinates(bot.commonSettings.openCageKey, bot.Latitude, bot.Longitude)
+			if err != nil {
+				log.Printf("alert: %s の所在地情報の設定に失敗しました：%s", bot.Name, err)
+				return nil, db, err
+			}
+		}
+	}
+
 	return
 }
 
@@ -166,14 +188,6 @@ func ActivateBots(bots []*Persona, db DB, p int) (err error) {
 
 	// 行ってらっしゃい
 	for _, bot := range bots {
-		if bot.LivesWithSun {
-			time.Sleep(1001 * time.Millisecond)
-			bot.LocInfo, err = getLocDataFromCoordinates(openCageKey, bot.Latitude, bot.Longitude)
-			if err != nil {
-				log.Printf("alert: 所在地情報の設定に失敗しました：%s", err)
-				return
-			}
-		}
 		go bot.spawn(ctx, db, true, false)
 	}
 

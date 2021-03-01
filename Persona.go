@@ -40,11 +40,11 @@ type Persona struct {
 	RandomToots     []string
 	RandomFrequency int
 	Awake           time.Duration
-	JobPool         chan int
+	*commonSettings
 }
 
-// initPersonaは、botとインスタンスの接続を確立する。
-func initPersona(apps []*MastoApp, bot *Persona) (err error) {
+// connectPersonaは、botとMastodonサーバの接続を確立する。
+func connectPersona(apps []*MastoApp, bot *Persona) (err error) {
 	ctx := context.Background()
 
 	bot.MyApp, err = getApp(bot.Instance, apps)
@@ -158,7 +158,7 @@ func (bot *Persona) daylife(ctx context.Context, db DB, sleep time.Duration, act
 		if sleep > 0 {
 			go func() {
 				weatherStr := ""
-				data, err := GetLocationWeather(bot.Latitude, bot.Longitude, 0)
+				data, err := GetLocationWeather(bot.commonSettings.weatherKey, bot.Latitude, bot.Longitude, 0)
 				if err != nil {
 					log.Printf("info: %s が天気予報を取ってこれませんでした", bot.Name)
 				} else {
@@ -194,10 +194,10 @@ func (bot *Persona) activities(ctx context.Context, db DB) {
 // postはトゥートを投稿する。失敗したらmaxRetryを上限に再試行する。
 func (bot *Persona) post(ctx context.Context, toot mastodon.Toot) (err error) {
 	time.Sleep(time.Duration(rand.Intn(5000)+3000) * time.Millisecond)
-	for i := 0; i < maxRetry; i++ {
+	for i := 0; i < bot.commonSettings.maxRetry; i++ {
 		_, err = bot.Client.PostStatus(ctx, &toot)
 		if err != nil {
-			time.Sleep(retryInterval)
+			time.Sleep(bot.commonSettings.retryInterval)
 			log.Printf("info: %s がトゥートできませんでした。リトライします：%s\n %s", bot.Name, toot.Status, err)
 			continue
 		}
@@ -209,10 +209,10 @@ func (bot *Persona) post(ctx context.Context, toot mastodon.Toot) (err error) {
 // favは、ステータスをふぁぼる。失敗したらmaxRetryを上限に再試行する。
 func (bot *Persona) fav(ctx context.Context, id mastodon.ID) (err error) {
 	time.Sleep(time.Duration(rand.Intn(2000)+1000) * time.Millisecond)
-	for i := 0; i < maxRetry; i++ {
+	for i := 0; i < bot.commonSettings.maxRetry; i++ {
 		_, err = bot.Client.Favourite(ctx, id)
 		if err != nil {
-			time.Sleep(retryInterval)
+			time.Sleep(bot.commonSettings.retryInterval)
 			log.Printf("info: %s がふぁぼれませんでした。リトライします：%s", bot.Name, err)
 			continue
 		}
@@ -224,10 +224,10 @@ func (bot *Persona) fav(ctx context.Context, id mastodon.ID) (err error) {
 // boostは、ステータスをブーストする。失敗したらmaxRetryを上限に再試行する。
 func (bot *Persona) boost(ctx context.Context, id mastodon.ID) (err error) {
 	time.Sleep(time.Duration(rand.Intn(5000)+3000) * time.Millisecond)
-	for i := 0; i < maxRetry; i++ {
+	for i := 0; i < bot.commonSettings.maxRetry; i++ {
 		_, err = bot.Client.Reblog(ctx, id)
 		if err != nil {
-			time.Sleep(retryInterval)
+			time.Sleep(bot.commonSettings.retryInterval)
 			log.Printf("info: %s がブーストできませんでした。リトライします。：%s\n", bot.Name, err)
 			continue
 		}
@@ -240,10 +240,10 @@ func (bot *Persona) boost(ctx context.Context, id mastodon.ID) (err error) {
 // followは、アカウントをフォローする。失敗したらmaxRetryを上限に再試行する。
 func (bot *Persona) follow(ctx context.Context, id mastodon.ID) (err error) {
 	time.Sleep(time.Duration(rand.Intn(2000)+1000) * time.Millisecond)
-	for i := 0; i < maxRetry; i++ {
+	for i := 0; i < bot.commonSettings.maxRetry; i++ {
 		_, err = bot.Client.AccountFollow(ctx, id)
 		if err != nil {
-			time.Sleep(retryInterval)
+			time.Sleep(bot.commonSettings.retryInterval)
 			log.Printf("info: %s がフォローできませんでした。リトライします：%s", bot.Name, err)
 			continue
 		}
@@ -254,10 +254,10 @@ func (bot *Persona) follow(ctx context.Context, id mastodon.ID) (err error) {
 
 // relationWithは、アカウントと自分との関係を取得する。失敗したらmaxRetryを上限に再実行する。
 func (bot *Persona) relationWith(ctx context.Context, id mastodon.ID) (rel []*mastodon.Relationship, err error) {
-	for i := 0; i < maxRetry; i++ {
+	for i := 0; i < bot.commonSettings.maxRetry; i++ {
 		rel, err = bot.Client.GetAccountRelationships(ctx, []string{string(id)})
 		if err != nil {
-			time.Sleep(retryInterval)
+			time.Sleep(bot.commonSettings.retryInterval)
 			log.Printf("info: %s と id:%s の関係が取得できませんでした。リトライします：%s", bot.Name, string(id), err)
 			continue
 		}

@@ -59,10 +59,10 @@ func (bot *Persona) monitor(ctx context.Context) {
 // openStreamingは、HTLのストリーミング接続を開始する。失敗したらmaxRetryを上限に再試行する。
 func (bot *Persona) openStreaming(ctx context.Context) (evch chan mastodon.Event, err error) {
 	wsc := bot.Client.NewWSClient()
-	for i := 0; i < maxRetry; i++ {
+	for i := 0; i < bot.commonSettings.maxRetry; i++ {
 		evch, err = wsc.StreamingWSUser(ctx)
 		if err != nil {
-			time.Sleep(retryInterval)
+			time.Sleep(bot.commonSettings.retryInterval)
 			log.Printf("info: %s のストリーミング受信開始をリトライします：%s", bot.Name, err)
 			continue
 		}
@@ -97,7 +97,7 @@ func (bot *Persona) respondToUpdate(ctx context.Context, ev *mastodon.UpdateEven
 	if text == "" {
 		return
 	}
-	result, err := parse(bot.JobPool, text)
+	result, err := parse(bot.commonSettings.langJobPool, text)
 	if err != nil {
 		return
 	}
@@ -189,7 +189,7 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 		name = name + " "
 	}
 	txt := textContent(status.Content)
-	res, err := parse(bot.JobPool, txt)
+	res, err := parse(bot.commonSettings.langJobPool, txt)
 	if err != nil {
 		return
 	}
@@ -251,7 +251,7 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 		if err != nil {
 			return err
 		}
-		locdata, err := getLocDataFromString(openCageKey, lc)
+		locdata, err := getLocDataFromString(bot.commonSettings.openCageKey, lc)
 		unknownmsg := ""
 		botLoc := false
 		if err != nil {
@@ -262,7 +262,7 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 		if len(lc) == 0 {
 			unknownmsg = ""
 		}
-		wdata, err := GetLocationWeather(locdata.Geometry.Lat, locdata.Geometry.Lng, dt)
+		wdata, err := GetLocationWeather(bot.commonSettings.weatherKey, locdata.Geometry.Lat, locdata.Geometry.Lng, dt)
 		if err != nil {
 			log.Printf("info: %s が天気の取得に失敗しました", bot.Name)
 			return err
