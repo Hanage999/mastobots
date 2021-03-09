@@ -87,6 +87,8 @@ github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0/go.mod h1:8NvIoxWQoOIhqOTXgf
 github.com/grpc-ecosystem/grpc-gateway v1.9.0/go.mod h1:vNeuVxBJEsws4ogUvrchl83t/GYV9WGTSLVdBhOQFDY=
 github.com/hanage999/go-mastodon v0.0.5-0.20210217093523-45ff9a12733b h1:pLv5XgBG60TXbIHmfpE9fH9ugE1HKxvQXcIIhb2NmUo=
 github.com/hanage999/go-mastodon v0.0.5-0.20210217093523-45ff9a12733b/go.mod h1:qENhQdv2Bl9Y5KX0/GFWAWlAxf7sLZV+4saZs/lv/qo=
+github.com/hanage999/go-mastodon v0.0.5-0.20210309220620-3d9ec8aad74e h1:AQZ9tjvF2rvgBZf9WX4RDw+8jOb+QL/rO/t44/S0e2s=
+github.com/hanage999/go-mastodon v0.0.5-0.20210309220620-3d9ec8aad74e/go.mod h1:qENhQdv2Bl9Y5KX0/GFWAWlAxf7sLZV+4saZs/lv/qo=
 github.com/hashicorp/consul/api v1.1.0/go.mod h1:VmuI/Lkw1nC05EYQWNKwWGbkg+FbDBtguAZLlVdkD9Q=
 github.com/hashicorp/consul/sdk v0.1.1/go.mod h1:VKf9jXwCTEY1QZP2MOLRhb5i/I/ssyNV1vwHyQBF0x8=
 github.com/hashicorp/errwrap v1.0.0/go.mod h1:YH+1FKiLXxHSkmPseP+kNlulaMuP3n2brvKWEqk/Jc4=

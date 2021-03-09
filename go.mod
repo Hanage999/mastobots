@@ -8,7 +8,7 @@ require (
 	github.com/comail/colog v0.0.0-20160416085026-fba8e7b1f46c
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/go-sql-driver/mysql v1.5.0
-	github.com/hanage999/go-mastodon v0.0.5-0.20210217093523-45ff9a12733b
+	github.com/hanage999/go-mastodon v0.0.5-0.20210309220620-3d9ec8aad74e
 	github.com/magiconair/properties v1.8.4 // indirect
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/pelletier/go-toml v1.8.1 // indirect
