@@ -5,6 +5,8 @@ import (
 	"log"
 	"math/rand"
 	"runtime"
+	"sort"
+	"strconv"
 	"time"
 
 	mastodon "github.com/hanage999/go-mastodon"
@@ -201,6 +203,8 @@ func (bot *Persona) checkNotifications(ctx context.Context) (err error) {
 		return
 	}
 
+	sort.Sort(ns)
+
 	for _, n := range ns {
 		switch n.Type {
 		case "mention":
@@ -222,6 +226,22 @@ func (bot *Persona) checkNotifications(ctx context.Context) (err error) {
 	}
 
 	return
+}
+
+type Notifications []*mastodon.Notification
+
+func (ns Notifications) Len() int {
+	return len(ns)
+}
+
+func (ns Notifications) Swap(i, j int) {
+	ns[i], ns[j] = ns[j], ns[i]
+}
+
+func (ns Notifications) Less(i, j int) bool {
+	iv, _ := strconv.Atoi(string(ns[i].ID))
+	jv, _ := strconv.Atoi(string(ns[j].ID))
+	return iv < jv
 }
 
 // postはトゥートを投稿する。失敗したらmaxRetryを上限に再試行する。
@@ -299,7 +319,7 @@ func (bot *Persona) relationWith(ctx context.Context, id mastodon.ID) (rel []*ma
 	return
 }
 
-func (bot *Persona) notifications(ctx context.Context) (ns []*mastodon.Notification, err error) {
+func (bot *Persona) notifications(ctx context.Context) (ns Notifications, err error) {
 	var pg mastodon.Pagination
 	for i := 0; i < bot.commonSettings.maxRetry; i++ {
 		ns, err = bot.Client.GetNotifications(ctx, &pg)
