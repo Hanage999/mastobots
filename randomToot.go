@@ -31,7 +31,9 @@ func (bot *Persona) randomToot(ctx context.Context) {
 
 		bot.randomToot(ctx)
 	case <-ctx.Done():
-		t.Stop()
+		if !t.Stop() {
+			<-t.C
+		}
 	}
 }
 

@@ -16,7 +16,9 @@ func tickAfterWait(ctx context.Context, wait time.Duration, itvl time.Duration) 
 		case <-t.C:
 			ch <- "first tick"
 		case <-ctx.Done():
-			t.Stop()
+			if !t.Stop() {
+				<-t.C
+			}
 			return
 		}
 
