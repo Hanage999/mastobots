@@ -13,8 +13,7 @@ import (
 )
 
 var (
-	version  = "1"
-	revision = "0"
+	version = "1"
 )
 
 type commonSettings struct {

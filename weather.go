@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"regexp"
 	"strings"
 )
 
@@ -130,29 +129,6 @@ func GetLocationWeather(weatherKey string, lat, lng float64, when int) (data OWF
 	return
 }
 
-// emojifyWeather は、天気を絵文字で表現する。
-func emojifyWeather(telop string) (emojiStr string, err error) {
-	if telop == "" {
-		err = fmt.Errorf("info: 天気テキストが空です")
-		return
-	}
-
-	rep := regexp.MustCompile(`晴れ?`)
-	emojiStr = rep.ReplaceAllString(telop, "☀️")
-	rep = regexp.MustCompile(`(止む)?\(?曇り?\)?`)
-	emojiStr = rep.ReplaceAllString(emojiStr, "☁️")
-	rep = regexp.MustCompile(`雨で暴風を伴う|暴風雨`)
-	emojiStr = rep.ReplaceAllString(emojiStr, "🌀☔️")
-	rep = regexp.MustCompile(`雪で暴風を伴う|暴風雪`)
-	emojiStr = rep.ReplaceAllString(emojiStr, "🌀☃️")
-	emojiStr = strings.Replace(emojiStr, "雨", "☂️", -1)
-	emojiStr = strings.Replace(emojiStr, "雪", "⛄", -1)
-	emojiStr = strings.Replace(emojiStr, "時々", "／", -1)
-	emojiStr = strings.Replace(emojiStr, "のち", "→", -1)
-
-	return
-}
-
 // forecastMessage は、天気予報を告げるメッセージを返す。
 func forecastMessage(ldata OCResult, wdata OWForcast, when int, assertion string, botLoc bool, fl bool) (msg string) {
 	whenstr := ""
@@ -168,7 +144,7 @@ func forecastMessage(ldata OCResult, wdata OWForcast, when int, assertion string
 	}
 
 	locStr := "このあたりは"
-	if botLoc == false {
+	if !botLoc {
 		locStr = getLocString(ldata, false) + "は"
 	}
 

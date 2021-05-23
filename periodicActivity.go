@@ -29,30 +29,25 @@ func (bot *Persona) periodicActivity(ctx context.Context, db DB) {
 	tc := tickAfterWait(ctx, delay, itvl)
 	log.Printf("info: %s が今日の定期トゥートを開始しました", bot.Name)
 
-LOOP:
-	for {
-		select {
-		case _, ok := <-tc:
-			if !ok {
-				log.Printf("info: %s が今日の定期トゥートを終了しました", bot.Name)
-				break LOOP
+	for str := range tc {
+		log.Printf("trace: %s", str)
+		go func() {
+			if err := db.deleteOldCandidates(bot); err != nil {
+				log.Printf("info :%s が古いトゥート候補の削除に失敗しました", bot.Name)
+				return
 			}
-			go func() {
-				if err := db.deleteOldCandidates(bot); err != nil {
-					log.Printf("info :%s が古いトゥート候補の削除に失敗しました", bot.Name)
-					return
-				}
-				stock, err := db.stockItems(bot)
-				if err != nil {
-					log.Printf("info: %s がアイテムの収集に失敗しました", bot.Name)
-					return
-				}
-				if err := bot.newsToot(ctx, stock, db); err != nil {
-					log.Printf("info: %s がニューストゥートに失敗しました", bot.Name)
-				}
-			}()
-		}
+			stock, err := db.stockItems(bot)
+			if err != nil {
+				log.Printf("info: %s がアイテムの収集に失敗しました", bot.Name)
+				return
+			}
+			if err := bot.newsToot(ctx, stock, db); err != nil {
+				log.Printf("info: %s がニューストゥートに失敗しました", bot.Name)
+			}
+		}()
 	}
+
+	log.Printf("info: %s が今日の定期トゥートを終了しました", bot.Name)
 }
 
 // newsTootはストックしたRSSアイテムをネタにトゥートする

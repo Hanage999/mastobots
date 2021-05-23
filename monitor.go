@@ -219,7 +219,7 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 			log.Printf("info: %s が関係取得に失敗しました", bot.Name)
 			return err
 		}
-		if (*rel[0]).Following == true {
+		if (*rel[0]).Following {
 			msg = "@" + account.Acct + " " + name + "さんはもうフォローしてるから大丈夫" + bot.Assertion + "よー"
 		} else {
 			if err = bot.follow(ctx, account.ID); err != nil {
