@@ -14,6 +14,7 @@ CREATE TABLE `candidates` (
   `item_id` int(11) unsigned NOT NULL,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
+  `keyword` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `item_per_bot` (`bot_id`,`item_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -36,6 +37,7 @@ CREATE TABLE `rss_feeds` (
   `last_updated` datetime NOT NULL,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
+  `alive` tinyint(1) unsigned DEFAULT '0',
   PRIMARY KEY (`id`),
   UNIQUE KEY `url` (`url`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
