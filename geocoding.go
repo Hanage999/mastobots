@@ -19,7 +19,7 @@ type OCResult struct {
 			Name string `json:"name"`
 		} `json:"timezone"`
 	} `json:"annotations"`
-	Components map[string]string `json:"components"`
+	Components map[string]interface{} `json:"components"`
 	Geometry   struct {
 		Lat float64 `json:"lat"`
 		Lng float64 `json:"lng"`
@@ -102,19 +102,30 @@ func getLocDataFromString(key string, loc []string) (data OCResult, err error) {
 
 // getLocString は、現在地の文字列を返す
 func getLocString(data OCResult, simple bool) (str string) {
-	tp := data.Components["_type"]
-	str = data.Components[tp]
 
-	country := data.Components["country"] + data.Annotations.Flag
-	state := data.Components["state"]
-	stateDistrict := data.Components["state_district"]
-	county := data.Components["county"]
-	city := data.Components["city"]
-	cityDistrict := data.Components["city_district"]
-	suburb := data.Components["suburb"]
-	town := data.Components["town"]
-	neighborhood := data.Components["neighborhood"]
-	unknown := data.Components["unknown"]
+	mp := make(map[string]string)
+
+	for k, v := range data.Components {
+		if txt, ok := v.(string); ok {
+			mp[k] = txt
+		} else {
+			mp[k] = ""
+		}
+	}
+
+	tp := mp["_type"]
+	str = mp[tp]
+
+	country := mp["country"] + data.Annotations.Flag
+	state := mp["state"]
+	stateDistrict := mp["state_district"]
+	county := mp["county"]
+	city := mp["city"]
+	cityDistrict := mp["city_district"]
+	suburb := mp["suburb"]
+	town := mp["town"]
+	neighborhood := mp["neighborhood"]
+	unknown := mp["unknown"]
 
 	names := [...]string{unknown, neighborhood, town, suburb, cityDistrict, city}
 	for _, name := range names {
