@@ -80,6 +80,7 @@ func connectPersona(apps []*MastoApp, bot *Persona) (err error) {
 // spawn は、botの活動を開始する
 func (bot *Persona) spawn(ctx context.Context, db DB, firstLaunch bool, nextDayOfPolarNight bool) {
 	sleep, active := getDayCycle(bot.WakeHour, bot.WakeMin, bot.SleepHour, bot.SleepMin)
+	bot.Awake = active
 
 	if bot.LivesWithSun {
 		sl, ac, cond, err := getDayCycleBySunMovement(bot.LocInfo.Annotations.Timezone.Name, bot.Latitude, bot.Longitude)
