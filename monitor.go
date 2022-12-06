@@ -2,7 +2,6 @@ package mastobots
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"math/rand"
 	"regexp"
@@ -206,7 +205,7 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 	var jm jumanResult
 	var ok bool
 	if jm, ok = res.(jumanResult); !ok {
-		err = fmt.Errorf("%sに送られたメッセージは日本語ではありません", bot.Name)
+		log.Printf("info: %sに送られたメッセージは日本語ではありません", bot.Name)
 		return
 	}
 
