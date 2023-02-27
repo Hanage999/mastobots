@@ -92,6 +92,8 @@ github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1 h1:EGx4pi6eqNxGa
 github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1/go.mod h1:wJfORRmW1u3UXTncJ5qlYoELFm8eSnnEO6hX4iZ3EWY=
 github.com/gorilla/websocket v1.4.2 h1:+/TMaTYc4QFitKJxsQ7Yye35DkWvkdLcvGKqM+x0Ufc=
 github.com/gorilla/websocket v1.4.2/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
+github.com/gorilla/websocket v1.5.0 h1:PPwGk2jz7EePpoHN/+ClbZu8SPxiqlu12wZP/3sWmnc=
+github.com/gorilla/websocket v1.5.0/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/grpc-ecosystem/go-grpc-middleware v1.0.0/go.mod h1:FiyG127CGDf3tlThmgyCl78X/SZQqEOJBCDaAfeWzPs=
 github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0/go.mod h1:8NvIoxWQoOIhqOTXgfV/d3M/q6VIi02HzZEHgUlZvzk=
 github.com/grpc-ecosystem/grpc-gateway v1.9.0/go.mod h1:vNeuVxBJEsws4ogUvrchl83t/GYV9WGTSLVdBhOQFDY=
@@ -101,6 +103,8 @@ github.com/hanage999/go-mastodon v0.0.5-0.20210309220620-3d9ec8aad74e h1:AQZ9tjv
 github.com/hanage999/go-mastodon v0.0.5-0.20210309220620-3d9ec8aad74e/go.mod h1:qENhQdv2Bl9Y5KX0/GFWAWlAxf7sLZV+4saZs/lv/qo=
 github.com/hanage999/go-mastodon v0.0.5-0.20210503012018-a9a7009b47c9 h1:oQ8v/7lFNudvrz482MOl79UkNB3XSdt4I/eADBAYWUs=
 github.com/hanage999/go-mastodon v0.0.5-0.20210503012018-a9a7009b47c9/go.mod h1:qENhQdv2Bl9Y5KX0/GFWAWlAxf7sLZV+4saZs/lv/qo=
+github.com/hanage999/go-mastodon v0.0.5-0.20230227011933-362552b37e59 h1:I5Yi5TNMXRxuy2sRihrAntoZ2kQGtRKhSAMFeAfM4Gk=
+github.com/hanage999/go-mastodon v0.0.5-0.20230227011933-362552b37e59/go.mod h1:Ir4+sd8X8cHy9I9X8oUB0PY/jyegQ1gWSljvHAku/XE=
 github.com/hashicorp/consul/api v1.1.0/go.mod h1:VmuI/Lkw1nC05EYQWNKwWGbkg+FbDBtguAZLlVdkD9Q=
 github.com/hashicorp/consul/sdk v0.1.1/go.mod h1:VKf9jXwCTEY1QZP2MOLRhb5i/I/ssyNV1vwHyQBF0x8=
 github.com/hashicorp/errwrap v1.0.0/go.mod h1:YH+1FKiLXxHSkmPseP+kNlulaMuP3n2brvKWEqk/Jc4=

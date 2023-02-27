@@ -97,19 +97,23 @@ func (bot *Persona) createNewsToot(db DB) (toot mastodon.Toot, item Item, err er
 	}
 
 	// 投稿トゥート作成
-	msg, err := bot.messageFromItem(item)
+	msg, lang, err := bot.messageFromItem(item)
 	if err != nil {
 		log.Printf("info: %s がアイテムid %d から投稿文の作成に失敗しました：%s", bot.Name, item.ID, err)
 	}
 
 	if msg != "" {
-		toot = mastodon.Toot{Status: msg}
+		if lang == "" {
+			toot = mastodon.Toot{Status: msg}
+		} else {
+			toot = mastodon.Toot{Status: msg, Language: lang}
+		}
 	}
 	return
 }
 
 // messageFromItemは、itemの内容から投稿文を作成する。
-func (bot *Persona) messageFromItem(item Item) (msg string, err error) {
+func (bot *Persona) messageFromItem(item Item) (msg string, lang string, err error) {
 	txt := item.Title
 	if !strings.HasPrefix(item.Content, txt) {
 		txt = txt + "\n" + item.Content
@@ -166,6 +170,14 @@ func (bot *Persona) messageFromItem(item Item) (msg string, err error) {
 		msg = bot.Comments[idx]
 		msg = strings.Replace(msg, "_keyword1_", best.surface, -1)
 		msg = strings.Replace(msg, "_topkana1_", best.firstKana, -1)
+
+		// 投稿言語の設定
+		switch result.(type) {
+		case jumanResult:
+			lang = "ja"
+		case proseResult:
+			lang = "en"
+		}
 	}
 
 	// リンクとハッシュタグを追加
