@@ -21,8 +21,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.7.1
 	github.com/urfave/cli v1.22.5 // indirect
-	golang.org/x/net v0.0.0-20210502030024-e5908800b52b
-	golang.org/x/sys v0.0.0-20210502180810-71e4cd670f79 // indirect
+	golang.org/x/net v0.7.0
 	gonum.org/v1/gonum v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect
 	gopkg.in/jdkato/prose.v2 v2.0.0
