@@ -191,6 +191,9 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 	if r.MatchString(name) {
 		name = name + " "
 	}
+	if status == nil {
+		return
+	}
 	txt := textContent(status.Content)
 	res, err := parse(bot.commonSettings.langJobPool, txt)
 	if err != nil {
