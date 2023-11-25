@@ -74,7 +74,7 @@ func getLocDataFromCoordinates(key string, lat, lng float64) (name, timeZone str
 		name = "地球のどこか"
 	}
 
-	timeZone = f.GetTimezoneName(lat, lng)
+	timeZone = f.GetTimezoneName(lng, lat)
 
 	return
 }
