@@ -30,4 +30,4 @@ MySQLデータベースに保存された日本語のRSSアイテムをJuman++�
 3. ./mastobots で起動。screenなどと併用するか、systemdでサービス化してください。
 
 ## クレジット
-+ Webサービス by Yahoo! JAPAN （https://developer.yahoo.co.jp/sitemap/）
++ Webサービス by Yahoo! JAPAN (https://developer.yahoo.co.jp/sitemap/)
