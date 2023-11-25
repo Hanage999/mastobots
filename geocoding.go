@@ -9,8 +9,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/ringsaturn/tzf"
 )
 
 // YahooPlaceInfoResults は、Yahoo場所情報APIからのデータを格納する
@@ -76,12 +74,7 @@ func getLocDataFromCoordinates(key string, lat, lng float64) (name, timeZone str
 		name = "地球のどこか"
 	}
 
-	finder, err := tzf.NewDefaultFinder()
-	if err != nil {
-		log.Printf("info: %s", err)
-		return "", "", err
-	}
-	timeZone = finder.GetTimezoneName(lat, lng)
+	timeZone = f.GetTimezoneName(lat, lng)
 
 	return
 }

@@ -9,11 +9,13 @@ import (
 	"time"
 
 	"github.com/comail/colog"
+	"github.com/ringsaturn/tzf"
 	"github.com/spf13/viper"
 )
 
 var (
 	version = "1"
+	f       tzf.F
 )
 
 type commonSettings struct {
@@ -153,6 +155,13 @@ func Initialize() (bots []*Persona, db DB, err error) {
 			return nil, db, err
 		}
 		bot.DBID = id
+	}
+
+	// TZF（グローバル変数に設定）を初期化
+	f, err = tzf.NewDefaultFinder()
+	if err != nil {
+		log.Printf("info: %s", err)
+		return nil, db, err
 	}
 
 	// botの住処を登録
