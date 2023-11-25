@@ -130,7 +130,7 @@ func GetLocationWeather(weatherKey string, lat, lng float64, when int) (data OWF
 }
 
 // forecastMessage は、天気予報を告げるメッセージを返す。
-func forecastMessage(ldata OCResult, wdata OWForcast, when int, assertion string, botLoc bool, fl bool) (msg string) {
+func forecastMessage(locString string, wdata OWForcast, when int, assertion string, botLoc bool, fl bool) (msg string) {
 	whenstr := ""
 	switch when {
 	case -1:
@@ -145,7 +145,7 @@ func forecastMessage(ldata OCResult, wdata OWForcast, when int, assertion string
 
 	locStr := "このあたりは"
 	if !botLoc {
-		locStr = getLocString(ldata, false) + "は"
+		locStr = locString + "は"
 	}
 
 	description := strings.Replace(wdata.Weather[0].Description, "適度な", "", -1) + "、"

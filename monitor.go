@@ -257,23 +257,22 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 		if err != nil {
 			return err
 		}
-		locdata, err := getLocDataFromString(bot.commonSettings.openCageKey, lc)
+		placeName, lat, lng, err := getLocDataFromString(bot.commonSettings.yahooClientID, lc)
 		unknownmsg := ""
 		botLoc := false
 		if err != nil {
 			unknownmsg = "ちょっと何言ってるか分からない" + bot.Assertion + "。でも、"
-			locdata = bot.LocInfo
+			placeName = bot.PlaceName
+			lat = bot.Latitude
+			lng = bot.Longitude
 			botLoc = true
 		}
-		if len(lc) == 0 {
-			unknownmsg = ""
-		}
-		wdata, err := GetLocationWeather(bot.commonSettings.weatherKey, locdata.Geometry.Lat, locdata.Geometry.Lng, dt)
+		wdata, err := GetLocationWeather(bot.commonSettings.weatherKey, lat, lng, dt)
 		if err != nil {
 			log.Printf("info: %s が天気の取得に失敗しました", bot.Name)
 			return err
 		}
-		msg = "@" + account.Acct + " " + unknownmsg + forecastMessage(locdata, wdata, dt, bot.Assertion, botLoc, fl)
+		msg = "@" + account.Acct + " " + unknownmsg + forecastMessage(placeName, wdata, dt, bot.Assertion, botLoc, fl)
 		if msg != "" {
 			toot := mastodon.Toot{Status: msg, Visibility: status.Visibility, InReplyToID: status.ID}
 			if err = bot.post(ctx, toot); err != nil {

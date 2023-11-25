@@ -19,7 +19,7 @@ var (
 type commonSettings struct {
 	maxRetry      int
 	retryInterval time.Duration
-	openCageKey   string
+	yahooClientID string
 	weatherKey    string
 	langJobPool   chan int
 }
@@ -71,7 +71,7 @@ func Initialize() (bots []*Persona, db DB, err error) {
 	var cmn commonSettings
 	cmn.maxRetry = 5
 	cmn.retryInterval = time.Duration(5) * time.Second
-	cmn.openCageKey = conf.GetString("OpenCageKey")
+	cmn.yahooClientID = conf.GetString("YahooClientID")
 	cmn.weatherKey = conf.GetString("OpenWeatherMapKey")
 	nOfJobs := conf.GetInt("NumConcurrentLangJobs")
 	if nOfJobs <= 0 {
@@ -160,7 +160,7 @@ func Initialize() (bots []*Persona, db DB, err error) {
 		if bot.LivesWithSun {
 			log.Printf("info: %s の所在地を設定しています……", bot.Name)
 			time.Sleep(1001 * time.Millisecond)
-			bot.LocInfo, err = getLocDataFromCoordinates(bot.commonSettings.openCageKey, bot.Latitude, bot.Longitude)
+			bot.PlaceName, bot.TimeZone, err = getLocDataFromCoordinates(bot.commonSettings.yahooClientID, bot.Latitude, bot.Longitude)
 			if err != nil {
 				log.Printf("alert: %s の所在地情報の設定に失敗しました：%s", bot.Name, err)
 				return nil, db, err
