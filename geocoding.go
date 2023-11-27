@@ -49,7 +49,8 @@ type SunInfo struct {
 
 // getLocDatafromCoordinates は、botの座標から所在地情報を取得して格納する
 func getLocDataFromCoordinates(key string, lat, lng float64) (name, timeZone string, err error) {
-	query := "https://map.yahooapis.jp/placeinfo/V1/get?lat=" + fmt.Sprint(lat) + "&lon=" + fmt.Sprint(lng) + "&appid=" + key + "&sort=-match&output=json"
+	key = url.QueryEscape(key)
+	query := "https://map.yahooapis.jp/placeinfo/V1/get?lat=" + fmt.Sprint(lat) + "&lon=" + fmt.Sprint(lng) + "&appid=" + key + "&sort=-score&output=json"
 
 	res, err := http.Get(query)
 	if err != nil {
@@ -61,17 +62,22 @@ func getLocDataFromCoordinates(key string, lat, lng float64) (name, timeZone str
 		log.Printf("info: %s", err)
 		return
 	}
-	var yc YahooPlaceInfoResults
-	if err = json.NewDecoder(res.Body).Decode(&yc); err != nil {
+	var yr YahooPlaceInfoResults
+	if err = json.NewDecoder(res.Body).Decode(&yr); err != nil {
 		log.Printf("info: map.yahooapis.jpからのレスポンスがデコードできませんでした：%s", err)
 		res.Body.Close()
 		return
 	}
 	res.Body.Close()
 
-	name = yc.ResultSet.Result[0].Where + "の" + yc.ResultSet.Result[0].Name
-	if name == "" {
-		name = "地球のどこか"
+	if yr.ResultSet.Result[0].Name == "" {
+		if yr.ResultSet.Result[0].Where == "" {
+			name = "地球のどこか"
+		} else {
+			name = yr.ResultSet.Result[0].Where
+		}
+	} else {
+		name = yr.ResultSet.Result[0].Where + "の" + yr.ResultSet.Result[0].Name
 	}
 
 	timeZone = f.GetTimezoneName(lng, lat)
@@ -83,13 +89,14 @@ func getLocDataFromCoordinates(key string, lat, lng float64) (name, timeZone str
 func getLocDataFromString(key string, loc []string) (placeName string, lat, lng float64, err error) {
 	area := strings.Join(loc, "")
 	areaq := url.QueryEscape(area)
+	key = url.QueryEscape(key)
 	categories := [3]string{"address", "world", "landmark"}
 	for _, category := range categories {
 		query := ""
 		if category == "address" {
 			query = "https://map.yahooapis.jp/geocode/V1/geoCoder?appid=" + key + "&output=json&sort=address2&query=" + areaq
 		} else {
-			query = "https://map.yahooapis.jp/geocode/cont/V1/contentsGeoCoder?appid=" + key + "&category=" + category + "&output=json&query" + areaq
+			query = "https://map.yahooapis.jp/geocode/cont/V1/contentsGeoCoder?appid=" + key + "&category=" + category + "&output=json&query=" + areaq
 		}
 
 		res, errr := http.Get(query)

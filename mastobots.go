@@ -177,6 +177,8 @@ func Initialize() (bots []*Persona, db DB, err error) {
 		}
 	}
 
+	f = nil
+
 	return
 }
 

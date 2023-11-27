@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -97,6 +98,7 @@ func (result jumanResult) getWeatherQueryTempType() (fl bool) {
 // GetLocationWeather は、指定された座標の天気をOpenWeatherMapで取得する。
 // when: -1は今、0は今日、1は明日、2は明後日
 func GetLocationWeather(weatherKey string, lat, lng float64, when int) (data OWForcast, err error) {
+	weatherKey = url.QueryEscape(weatherKey)
 	query := "https://api.openweathermap.org/data/2.5/onecall?lat=" + fmt.Sprintf("%f", lat) + "&lon=" + fmt.Sprintf("%f", lng) + "&units=metric&lang=ja&exclude=hourly,minutely&appid=" + weatherKey
 
 	res, err := http.Get(query)
