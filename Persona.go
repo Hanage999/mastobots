@@ -62,9 +62,17 @@ func connectPersona(apps []*MastoApp, bot *Persona) (err error) {
 		ClientSecret: bot.MyApp.ClientSecret,
 	})
 
-	err = bot.Client.Authenticate(ctx, bot.Email, bot.Password)
+	for i := 0; i < bot.commonSettings.maxRetry+45; i++ {
+		err = bot.Client.Authenticate(ctx, bot.Email, bot.Password)
+		if err != nil {
+			time.Sleep(bot.commonSettings.retryInterval)
+			log.Printf("alert: %s がアクセストークンの取得に失敗しました。リトライします：%s", bot.Name, err)
+			continue
+		}
+		break
+	}
 	if err != nil {
-		log.Printf("alert: %s がアクセストークンの取得に失敗しました：%s", bot.Name, err)
+		log.Printf("alert: %s がアクセストークンの取得に失敗しました。終了します：%s", bot.Name, err)
 		return
 	}
 
