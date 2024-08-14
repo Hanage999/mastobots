@@ -139,6 +139,7 @@ func (bot *Persona) daylife(ctx context.Context, db DB, sleep time.Duration, act
 
 	if sleep > 0 {
 		t := time.NewTimer(sleep)
+		defer t.Stop()
 		if !firstLaunch && !nextDayOfPolarNight {
 			go func() {
 				toot := mastodon.Toot{Status: sleepWithSun + "おやすみなさい" + bot.Assertion + "💤……"}
@@ -153,9 +154,6 @@ func (bot *Persona) daylife(ctx context.Context, db DB, sleep time.Duration, act
 			case <-t.C:
 				break LOOP
 			case <-ctx.Done():
-				if !t.Stop() {
-					<-t.C
-				}
 				return
 			}
 		}

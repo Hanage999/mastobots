@@ -1,8 +1,8 @@
 module github.com/hanage999/mastobots
 
-go 1.21
+go 1.23
 
-toolchain go1.21.4
+toolchain go1.23.0
 
 replace gopkg.in/jdkato/prose.v2 => github.com/jdkato/prose/v2 v2.0.0
 

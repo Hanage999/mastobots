@@ -16,6 +16,7 @@ func (bot *Persona) randomToot(ctx context.Context) {
 	itvl := time.Duration(ft) * time.Minute
 
 	t := time.NewTimer(itvl)
+	defer t.Stop()
 
 	select {
 	case <-t.C:
@@ -31,9 +32,6 @@ func (bot *Persona) randomToot(ctx context.Context) {
 
 		bot.randomToot(ctx)
 	case <-ctx.Done():
-		if !t.Stop() {
-			<-t.C
-		}
 	}
 }
 

@@ -12,13 +12,11 @@ func tickAfterWait(ctx context.Context, wait time.Duration, itvl time.Duration) 
 	go func() {
 		defer close(ch)
 		t := time.NewTimer(wait)
+		defer t.Stop()
 		select {
 		case <-t.C:
 			ch <- "first tick"
 		case <-ctx.Done():
-			if !t.Stop() {
-				<-t.C
-			}
 			return
 		}
 
