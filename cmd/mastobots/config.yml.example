@@ -9,7 +9,7 @@ DBCredentials:  # MySQLデータベース接続のための資格情報（環境
 YahooClientID: ***  # Yahoo!のYOLP Web APIを使うためのClient ID。https://e.developer.yahoo.co.jp/register から取得。
                     # LiveWithSun を true で使う場合に必要。
 
-OpenWeatherMapKey: ***   # 天気予報サービス  (https://openweathermap.org/) のためのAPIキー（要登録）
+OpenWeatherMapKey: ***   # 天気予報サービス  (https://openweathermap.org/) One Call API 3.0（要登録）のためのAPIキー
 
 NumConcurrentLangJobs: 4    # 言語解析ジョブの同時実行数の上限（多すぎるとメモリ使いすぎでアプリが落ちる。1〜10を指定可）
 
