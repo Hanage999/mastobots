@@ -16,10 +16,10 @@ import (
 type Persona struct {
 	Name            string
 	Instance        string
-	MyApp           *MastoApp
-	Email           string
-	Password        string
 	Client          *mastodon.Client
+	ClientKey       string
+	ClientSecret    string
+	AccessToken     string
 	MyID            mastodon.ID
 	Title           string
 	Starter         string
@@ -47,34 +47,15 @@ type Persona struct {
 }
 
 // connectPersonaは、botとMastodonサーバの接続を確立する。
-func connectPersona(apps []*MastoApp, bot *Persona) (err error) {
+func connectPersona(bot *Persona) (err error) {
 	ctx := context.Background()
-
-	bot.MyApp, err = getApp(bot.Instance, apps)
-	if err != nil {
-		log.Printf("alert: %s のためのアプリが取得できませんでした：%s", bot.Name, err)
-		return
-	}
 
 	bot.Client = mastodon.NewClient(&mastodon.Config{
 		Server:       bot.Instance,
-		ClientID:     bot.MyApp.ClientID,
-		ClientSecret: bot.MyApp.ClientSecret,
+		ClientID:     bot.ClientKey,
+		ClientSecret: bot.ClientSecret,
+		AccessToken:  bot.AccessToken,
 	})
-
-	for i := 0; i < bot.commonSettings.maxRetry+45; i++ {
-		err = bot.Client.Authenticate(ctx, bot.Email, bot.Password)
-		if err != nil {
-			time.Sleep(bot.commonSettings.retryInterval)
-			log.Printf("alert: %s がアクセストークンの取得に失敗しました。リトライします：%s", bot.Name, err)
-			continue
-		}
-		break
-	}
-	if err != nil {
-		log.Printf("alert: %s がアクセストークンの取得に失敗しました。終了します：%s", bot.Name, err)
-		return
-	}
 
 	acc, err := bot.Client.GetAccountCurrentUser(ctx)
 	if err != nil {

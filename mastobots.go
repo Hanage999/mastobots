@@ -3,7 +3,6 @@ package mastobots
 import (
 	"context"
 	"log"
-	"os"
 	"os/exec"
 	"strconv"
 	"time"
@@ -55,8 +54,6 @@ func Initialize() (bots []*Persona, db DB, err error) {
 		}
 	}
 
-	var appName string
-	var apps []*MastoApp
 	var cr map[string]string
 
 	// bot設定ファイル読み込み
@@ -68,7 +65,6 @@ func Initialize() (bots []*Persona, db DB, err error) {
 		log.Printf("alert: 設定ファイルが読み込めませんでした")
 		return nil, db, err
 	}
-	appName = conf.GetString("MastoAppName")
 	conf.UnmarshalKey("Personae", &bots)
 	var cmn commonSettings
 	cmn.maxRetry = 5
@@ -87,48 +83,9 @@ func Initialize() (bots []*Persona, db DB, err error) {
 	}
 	cr = conf.GetStringMapString("DBCredentials")
 
-	// マストドンアプリ設定ファイル読み込み
-	file, err := os.OpenFile("apps.yml", os.O_CREATE, 0666)
-	if err != nil {
-		log.Printf("alert: アプリ設定ファイルが作成できませんでした")
-		return nil, db, err
-	}
-	file.Close()
-	appConf := viper.New()
-	appConf.AddConfigPath(".")
-	appConf.SetConfigName("apps")
-	appConf.SetConfigType("yaml")
-	if err := appConf.ReadInConfig(); err != nil {
-		log.Printf("alert: アプリ設定ファイルが読み込めませんでした")
-		return nil, db, err
-	}
-	appConf.UnmarshalKey("MastoApps", &apps)
-
-	// Mastodonクライアントの登録
-	dirtyConfig := false
-	for _, bot := range bots {
-		updatedApps, err := initMastoApps(apps, appName, bot.Instance)
-		if err != nil {
-			log.Printf("alert: %s のためのアプリを登録できませんでした", bot.Instance)
-			return nil, db, err
-		}
-		if len(updatedApps) > 0 {
-			apps = updatedApps
-			dirtyConfig = true
-		}
-	}
-	if dirtyConfig {
-		appConf.Set("MastoApps", apps)
-		if err := appConf.WriteConfig(); err != nil {
-			log.Printf("alert: アプリ設定ファイルが書き込めませんでした：%s", err)
-			return nil, db, err
-		}
-		log.Printf("info: 設定ファイルを更新しました")
-	}
-
 	// botをMastodonサーバに接続
 	for _, bot := range bots {
-		if err := connectPersona(apps, bot); err != nil {
+		if err := connectPersona(bot); err != nil {
 			log.Printf("alert: %s をMastodonサーバに接続できませんでした", bot.Name)
 			return nil, db, err
 		}
