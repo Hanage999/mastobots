@@ -17,8 +17,6 @@ type Persona struct {
 	Name            string
 	Instance        string
 	Client          *mastodon.Client
-	ClientKey       string
-	ClientSecret    string
 	AccessToken     string
 	MyID            mastodon.ID
 	Title           string
@@ -52,8 +50,8 @@ func connectPersona(bot *Persona) (err error) {
 
 	bot.Client = mastodon.NewClient(&mastodon.Config{
 		Server:       bot.Instance,
-		ClientID:     bot.ClientKey,
-		ClientSecret: bot.ClientSecret,
+		ClientID:     "",
+		ClientSecret: "",
 		AccessToken:  bot.AccessToken,
 	})
 

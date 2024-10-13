@@ -14,9 +14,7 @@ NumConcurrentLangJobs: 4    # 言語解析ジョブの同時実行数の上限�
 Personae:   # 各botの情報
     -   Name: mybot
         Instance: https://example.com
-        ClientKey: ***************      # 以下3項目はMastodonユーザー設定→「開発」→「新規アプリ」から生成
-        ClientSecret: ***************   # アクセス権は read profile write follow push にチェック
-        AccessToken: ***************    #
+        AccessToken: ***************    # Mastodonユーザー設定→「開発」→「新規アプリ」から生成。アクセス権は read profile write follow push にチェック。
         WakeHour: 6     # 起きる時刻（時）
         WakeMin: 0      # 起きる時刻（分）
         SleepHour: 22   # 寝る時刻（時）
