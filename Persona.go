@@ -55,11 +55,21 @@ func connectPersona(bot *Persona) (err error) {
 		AccessToken:  bot.AccessToken,
 	})
 
-	acc, err := bot.Client.GetAccountCurrentUser(ctx)
+	var acc *mastodon.Account
+	for i := 0; i < bot.commonSettings.maxRetry+45; i++ {
+		acc, err = bot.Client.GetAccountCurrentUser(ctx)
+		if err != nil {
+			time.Sleep(bot.commonSettings.retryInterval)
+			log.Printf("alert: %s のアカウントIDが取得できません。リトライします：%s", bot.Name, err)
+			continue
+		}
+		break
+	}
 	if err != nil {
 		log.Printf("alert: %s のアカウントIDが取得できませんでした：%s", bot.Name, err)
 		return
 	}
+
 	bot.MyID = acc.ID
 
 	return
