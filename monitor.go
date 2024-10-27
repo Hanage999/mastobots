@@ -60,15 +60,15 @@ func (bot *Persona) openStreaming(ctx context.Context) (evch chan mastodon.Event
 	wsc := bot.Client.NewWSClient()
 	for i := 0; i < bot.commonSettings.maxRetry; i++ {
 		evch, err = wsc.StreamingWSUser(ctx)
-		if err != nil {
-			time.Sleep(bot.commonSettings.retryInterval)
-			log.Printf("info: %s のストリーミング受信開始をリトライします：%s", bot.Name, err)
-			continue
+		if err == nil {
+			log.Printf("trace: %s のストリーミング受信に成功しました", bot.Name)
+			return
 		}
-		log.Printf("trace: %s のストリーミング受信に成功しました", bot.Name)
-		return
+		log.Printf("info: %s のストリーミング受信が開始できません：%s", bot.Name, err)
+		time.Sleep(bot.commonSettings.retryInterval)
 	}
-	log.Printf("info: %s のストリーミング受信開始に失敗しました：%s", bot.Name, err)
+
+	log.Printf("info: %s のストリーミング受信開始がリトライ上限に達しました：%s", bot.Name, err)
 	return
 }
 
