@@ -3,9 +3,7 @@ package main
 import (
 	"flag"
 	"log"
-	"math/rand"
 	"os"
-	"time"
 
 	"github.com/hanage999/mastobots"
 )
@@ -18,9 +16,6 @@ func run() (exitCode int) {
 	exitCode = 0
 
 	// 初期化
-
-	// ランダムのシード値を設定
-	rand.Seed(time.Now().UnixNano())
 
 	// フラグ読み込み
 	var p = flag.Int("p", 0, "実行終了までの時間（分）")
