@@ -83,10 +83,10 @@ func Initialize() (bots []*Persona, db DB, err error) {
 	}
 	cr = conf.GetStringMapString("DBCredentials")
 
-	// botをMastodonサーバに接続
+	// botをMastodonサーバに接続し、アカウントIDを取得
 	for _, bot := range bots {
-		if err := connectPersona(bot); err != nil {
-			log.Printf("alert: %s をMastodonサーバに接続できませんでした。終了します", bot.Name)
+		if err := bot.getMastoID(); err != nil {
+			log.Printf("alert: %s のMastodonアカウントIDができませんでした。終了します", bot.Name)
 			return nil, db, err
 		}
 	}
