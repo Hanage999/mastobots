@@ -9,7 +9,7 @@ replace gopkg.in/jdkato/prose.v2 => github.com/jdkato/prose/v2 v2.0.0
 require (
 	github.com/comail/colog v0.0.0-20160416085026-fba8e7b1f46c
 	github.com/go-sql-driver/mysql v1.8.1
-	github.com/hanage999/go-mastodon v0.0.5-0.20241027003546-67a18a0592ab
+	github.com/hanage999/go-mastodon v0.0.5-0.20241102235614-74e9cd061858
 	github.com/ringsaturn/tzf v0.16.0
 	github.com/spf13/viper v1.19.0
 	golang.org/x/net v0.30.0
