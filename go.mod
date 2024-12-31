@@ -12,7 +12,7 @@ require (
 	github.com/hanage999/go-mastodon v0.0.5-0.20241102235614-74e9cd061858
 	github.com/ringsaturn/tzf v0.16.0
 	github.com/spf13/viper v1.19.0
-	golang.org/x/net v0.30.0
+	golang.org/x/net v0.33.0
 	gopkg.in/jdkato/prose.v2 v2.0.0
 )
 
@@ -43,8 +43,8 @@ require (
 	go.mongodb.org/mongo-driver v1.17.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c // indirect
-	golang.org/x/sys v0.26.0 // indirect
-	golang.org/x/text v0.19.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 	gonum.org/v1/gonum v0.15.1 // indirect
 	google.golang.org/protobuf v1.35.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
