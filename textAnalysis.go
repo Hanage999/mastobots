@@ -3,9 +3,11 @@ package mastobots
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"log"
 	"math/rand"
 	"os/exec"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -27,9 +29,33 @@ type candidate struct {
 	priority  int
 }
 
-// jumanResult は、テキストをjumanppで形態素解析した結果を格納する
-type jumanResult struct {
-	Nodes [][]string
+// Sudachi/UniDicの品詞体系には「形式名詞」がない。
+// JumanDICで形式名詞として定義される8語のうち、Sudachiが名詞として出力する6語を辞書形で互換判定する。
+// 残りの「の」と「ん」はSudachiでは助詞-準体助詞となるため、名詞候補から自動的に除外される。
+var jumanFormalNounDictionaryForms = map[string]struct{}{
+	"こと":  {},
+	"はず":  {},
+	"わけ":  {},
+	"つもり": {},
+	"もの":  {},
+	"もん":  {},
+}
+
+// sudachiMorpheme は、Sudachiで解析した一つの形態素を格納する。
+type sudachiMorpheme struct {
+	surface         string
+	partOfSpeech    [6]string
+	normalizedForm  string
+	dictionaryForm  string
+	reading         string
+	dictionaryID    int
+	synonymGroupIDs []int
+	isOOV           bool
+}
+
+// sudachiResult は、テキストをSudachiで形態素解析した結果を格納する。
+type sudachiResult struct {
+	Nodes []sudachiMorpheme
 }
 
 // proseResult は、テキストをproseで形態素解析した結果を格納する
@@ -38,7 +64,7 @@ type proseResult struct {
 	Entities []prose.Entity
 }
 
-func (result jumanResult) length() int {
+func (result sudachiResult) length() int {
 	return len(result.Nodes)
 }
 
@@ -46,17 +72,20 @@ func (result proseResult) length() int {
 	return len(result.Nodes)
 }
 
-func (result jumanResult) candidates() (cds []candidate) {
+func (result sudachiResult) candidates() (cds []candidate) {
 	cds = make([]candidate, 0)
 	for _, node := range result.Nodes {
-		if node[3] != "名詞" || node[5] == "数詞" || node[5] == "形式名詞" {
+		if node.surface == "" || node.reading == "" || !node.isNoun() || node.isNumericNoun() || node.isJumanFormalNoun() {
 			continue
 		}
-		cd := candidate{node[0], string(getRuneAt(node[1], 0)), rand.Intn(2000)}
-		if node[5] == "組織名" || node[5] == "人名" || node[5] == "地名" {
+		cd := candidate{node.surface, string(getRuneAt(node.reading, 0)), rand.Intn(2000)}
+		if node.isProperNoun() {
 			cd.priority = 700 + rand.Intn(2000)
 		}
 		cds = append(cds, cd)
+	}
+	if len(cds) == 0 && len(result.Nodes) > 0 {
+		log.Printf("info: Sudachi解析結果に名詞候補がありません（形態素数: %d、先頭の解析結果: %s）", len(result.Nodes), result.summary(10))
 	}
 	return
 }
@@ -85,10 +114,9 @@ func (result proseResult) candidates() (cds []candidate) {
 	return
 }
 
-func (result jumanResult) contain(str string) bool {
+func (result sudachiResult) contain(str string) bool {
 	for _, node := range result.Nodes {
-		// 3番目の要素が基本形
-		if node[2] == str {
+		if node.dictionaryForm == str || node.normalizedForm == str {
 			log.Printf("trace: 一致した単語：%s", str)
 			return true
 		}
@@ -107,19 +135,20 @@ func (result proseResult) contain(str string) bool {
 }
 
 // parseは、テキストを形態素解析した結果を返す。
-func parse(jpl chan int, text string) (result parseResult, err error) {
+func parse(settings *commonSettings, text string) (result parseResult, err error) {
 	if text == "" {
 		err = errors.New("解析する文字列が空です")
 		log.Printf("info: %s", err)
 		return
 	}
 
+	settings.langJobPool <- 0
+	defer func() { <-settings.langJobPool }()
+
 	if isJap(text) {
-		result, err = parseJapanese(text)
+		result, err = parseJapanese(settings.sudachi, text)
 	} else {
-		jpl <- 0
 		result, err = parseEnglish(text)
-		<-jpl
 	}
 
 	return
@@ -153,50 +182,169 @@ func parseEnglish(text string) (proseResult, error) {
 	return proseResult{tks, etts}, nil
 }
 
-// parseJapanese は、日本語のテキストをJuman++で形態素解析して結果を返す。
-func parseJapanese(text string) (result jumanResult, err error) {
-	// 改行のない長文はJumanppに食わせるとエラーになるので、句点で強制改行
-	safeStr := strings.Replace(text, "。\n", "。", -1)
-	safeStr = strings.Replace(safeStr, "。", "。\n", -1)
-
-	// Juman++で形態素解析
-	cmd := exec.Command("jumanpp")
-	cmd.Stdin = strings.NewReader(safeStr)
+// parseJapanese は、日本語のテキストをSudachiで形態素解析して結果を返す。
+func parseJapanese(settings sudachiSettings, text string) (result sudachiResult, err error) {
+	cmd := exec.Command("java", "-jar", settings.jarPath, "-r", settings.configPath, "-a")
+	if !strings.HasSuffix(text, "\n") {
+		text += "\n"
+	}
+	cmd.Stdin = strings.NewReader(text)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
 	out, err := cmd.Output()
 	if err != nil {
+		detail := strings.TrimSpace(stderr.String())
+		if detail != "" {
+			err = fmt.Errorf("Sudachiの実行に失敗しました：%w（%s）", err, detail)
+		}
 		log.Printf("info: 形態素解析器が正常に起動できませんでした：%s", err)
 		return
 	}
 
-	// 解析結果をスライスに整理（半角スペース等は除外）
-	nodeStrs := strings.Split(string(out), "\n")
-	nodes := make([][]string, 0)
-	strange := false
-	for _, s := range nodeStrs {
-		if strings.HasPrefix(s, "#") || strings.HasPrefix(s, " ") || strings.HasPrefix(s, "@") || strings.HasPrefix(s, "EOS") || s == "" {
+	return parseSudachiOutput(out)
+}
+
+// parseSudachiOutput は、Sudachiの -a 出力をアプリ内の解析結果へ変換する。
+// 列は表層形、品詞6階層、正規化形、辞書形、読み、辞書ID、同義語グループID、OOVフラグの順。
+func parseSudachiOutput(out []byte) (result sudachiResult, err error) {
+	nodes := make([]sudachiMorpheme, 0)
+	for _, line := range strings.Split(string(out), "\n") {
+		line = strings.TrimSuffix(line, "\r")
+		if line == "" || line == "EOS" {
 			continue
 		}
-		node := strings.SplitN(s, " ", 12)
-		if len(node) < 12 {
-			strange = true
-			log.Println("info: 異常なjumanpp解析結果：", node)
-			continue
+
+		columns := strings.Split(line, "\t")
+		if len(columns) < 8 {
+			return sudachiResult{nodes}, fmt.Errorf("異常なSudachi解析結果：%q", line)
 		}
-		nodes = append(nodes, node)
-	}
-	result = jumanResult{nodes}
 
-	if strange {
-		log.Printf("info: 解析異常が出たテキスト：%s", safeStr)
+		parts := strings.Split(columns[1], ",")
+		if len(parts) != 6 {
+			return sudachiResult{nodes}, fmt.Errorf("異常なSudachi品詞情報：%q", columns[1])
+		}
+		var partOfSpeech [6]string
+		copy(partOfSpeech[:], parts)
+
+		dictionaryID, conversionErr := strconv.Atoi(columns[5])
+		if conversionErr != nil {
+			return sudachiResult{nodes}, fmt.Errorf("異常なSudachi辞書ID：%q", columns[5])
+		}
+		synonymGroupIDs, conversionErr := parseSudachiIDList(columns[6])
+		if conversionErr != nil {
+			return sudachiResult{nodes}, fmt.Errorf("異常なSudachi同義語グループID：%q", columns[6])
+		}
+
+		reading := columns[4]
+		if reading == "" || reading == "*" {
+			reading = columns[0]
+		} else {
+			reading = katakanaToHiragana(reading)
+		}
+
+		nodes = append(nodes, sudachiMorpheme{
+			surface:         columns[0],
+			partOfSpeech:    partOfSpeech,
+			normalizedForm:  columns[2],
+			dictionaryForm:  columns[3],
+			reading:         reading,
+			dictionaryID:    dictionaryID,
+			synonymGroupIDs: synonymGroupIDs,
+			isOOV:           dictionaryID < 0 || columns[7] == "(OOV)",
+		})
 	}
 
-	return
+	if len(nodes) == 0 {
+		return sudachiResult{}, fmt.Errorf("Sudachiの解析結果に形態素がありません（出力: %q）", truncateText(strings.TrimSpace(string(out)), 200))
+	}
+
+	return sudachiResult{nodes}, nil
+}
+
+func (result sudachiResult) summary(limit int) string {
+	if limit > len(result.Nodes) {
+		limit = len(result.Nodes)
+	}
+	items := make([]string, 0, limit)
+	for _, node := range result.Nodes[:limit] {
+		items = append(items, fmt.Sprintf("%s[%s]", node.surface, strings.Join(node.partOfSpeech[:], ",")))
+	}
+	return strings.Join(items, " ")
+}
+
+func truncateText(text string, maxRunes int) string {
+	runes := []rune(text)
+	if len(runes) <= maxRunes {
+		return text
+	}
+	return string(runes[:maxRunes]) + "…"
+}
+
+func parseSudachiIDList(text string) ([]int, error) {
+	text = strings.TrimSpace(text)
+	if len(text) < 2 || text[0] != '[' || text[len(text)-1] != ']' {
+		return nil, fmt.Errorf("角括弧で囲まれていません")
+	}
+	text = strings.TrimSpace(text[1 : len(text)-1])
+	if text == "" {
+		return []int{}, nil
+	}
+
+	values := strings.Split(text, ",")
+	ids := make([]int, 0, len(values))
+	for _, value := range values {
+		id, err := strconv.Atoi(strings.TrimSpace(value))
+		if err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, nil
+}
+
+func (m sudachiMorpheme) isNoun() bool {
+	return m.partOfSpeech[0] == "名詞"
+}
+
+func (m sudachiMorpheme) isProperNoun() bool {
+	return m.isNoun() && m.partOfSpeech[1] == "固有名詞"
+}
+
+func (m sudachiMorpheme) isNumericNoun() bool {
+	return m.isNoun() && m.partOfSpeech[1] == "数詞"
+}
+
+func (m sudachiMorpheme) isJumanFormalNoun() bool {
+	if !m.isNoun() {
+		return false
+	}
+	_, found := jumanFormalNounDictionaryForms[m.dictionaryForm]
+	return found
+}
+
+func (m sudachiMorpheme) isPlaceName() bool {
+	return m.isProperNoun() && m.partOfSpeech[2] == "地名"
+}
+
+func katakanaToHiragana(text string) string {
+	return strings.Map(func(r rune) rune {
+		if r >= 'ァ' && r <= 'ヶ' {
+			return r - 0x60
+		}
+		return r
+	}, text)
 }
 
 // getRuneAtは、文字列の中のn番目の文字を返す。
 // https://pinzolo.github.io/2016/05/31/golang-get-rune-from-string.html
 func getRuneAt(s string, i int) rune {
 	rs := []rune(s)
+	if len(rs) == 0 {
+		return 0
+	}
+	if i < 0 {
+		i = 0
+	}
 	if len(rs) < i+1 {
 		i = len(rs) - 1
 	}

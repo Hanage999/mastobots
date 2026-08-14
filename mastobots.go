@@ -2,8 +2,11 @@ package mastobots
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -23,6 +26,12 @@ type commonSettings struct {
 	yahooClientID string
 	weatherKey    string
 	langJobPool   chan int
+	sudachi       sudachiSettings
+}
+
+type sudachiSettings struct {
+	jarPath    string
+	configPath string
 }
 
 // Initialize は、config.ymlに従ってbotとデータベース接続を初期化する。
@@ -46,7 +55,7 @@ func Initialize() (bots []*Persona, db DB, err error) {
 	colog.Register()
 
 	// 依存アプリの存在確認
-	for _, cmd := range []string{"jumanpp", "mysql"} {
+	for _, cmd := range []string{"java", "mysql"} {
 		_, err := exec.LookPath(cmd)
 		if err != nil {
 			log.Printf("alert: %s がインストールされていません！", cmd)
@@ -71,6 +80,11 @@ func Initialize() (bots []*Persona, db DB, err error) {
 	cmn.retryInterval = time.Duration(5) * time.Second
 	cmn.yahooClientID = conf.GetString("YahooClientID")
 	cmn.weatherKey = conf.GetString("OpenWeatherMapKey")
+	cmn.sudachi, err = loadSudachiSettings(conf.GetString("SudachiHome"))
+	if err != nil {
+		log.Printf("alert: Sudachiの設定を読み込めませんでした：%s", err)
+		return nil, db, err
+	}
 	nOfJobs := conf.GetInt("NumConcurrentLangJobs")
 	if nOfJobs <= 0 {
 		nOfJobs = 1
@@ -137,6 +151,28 @@ func Initialize() (bots []*Persona, db DB, err error) {
 	f = nil
 
 	return
+}
+
+func loadSudachiSettings(home string) (sudachiSettings, error) {
+	if home == "" {
+		return sudachiSettings{}, fmt.Errorf("設定項目 SudachiHome が設定されていません")
+	}
+
+	settings := sudachiSettings{
+		jarPath:    filepath.Join(home, "sudachi-0.8.0.jar"),
+		configPath: filepath.Join(home, "sudachi.json"),
+	}
+	for _, path := range []string{settings.jarPath, settings.configPath} {
+		info, err := os.Stat(path)
+		if err != nil {
+			return sudachiSettings{}, fmt.Errorf("Sudachiのファイル %q を確認できません：%w", path, err)
+		}
+		if info.IsDir() {
+			return sudachiSettings{}, fmt.Errorf("Sudachiのファイル %q がディレクトリです", path)
+		}
+	}
+
+	return settings, nil
 }
 
 // ActivateBots は、botたちを活動させる。

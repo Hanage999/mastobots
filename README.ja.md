@@ -5,7 +5,7 @@
 
 指定したキーワードを含むRSSフィードのアイテムを取得し、日本語または英語で解析した後、日本語のコメントをつけてMastodonに定期的にポストするボットです。また、メンションへの反応や天気情報の提供も行います。
 
-RSSアイテムはMySQLデータベースに保存され、日本語アイテムはJuman++、英語アイテムはProseを用いて形態素解析されます。ボットが関心を持つキーワードを解析結果と照合し、自動的にコメント付きでポストします。
+RSSアイテムはMySQLデータベースに保存され、日本語アイテムはSudachi、英語アイテムはProseを用いて形態素解析されます。ボットが関心を持つキーワードを解析結果と照合し、自動的にコメント付きでポストします。
 
 RSSアイテムをデータベースに取り込むには、[feedAggregator](https://blog.crazynewworld.net/2018/10/29/323/) など別のツールを使用してください。
 
@@ -16,7 +16,8 @@ RSSアイテムをデータベースに取り込むには、[feedAggregator](htt
 事前に以下をインストールしてください。
 
 - MySQL
-- [Juman++ 2.0.0-rc3](http://nlp.ist.i.kyoto-u.ac.jp/index.php?JUMAN++)
+- Java
+- [Sudachi 0.8.0](https://github.com/WorksApplications/Sudachi/releases/tag/v0.8.0)
 
 ## 主な機能
 
@@ -35,7 +36,8 @@ RSSアイテムをデータベースに取り込むには、[feedAggregator](htt
 1. `database_tables.sql` をMySQLデータベースにインポートし、feedAggregator等でRSSアイテムを定期取得。
 2. `cmd/mastobots` 内で `go build` し、`mastobots` 実行ファイルを作成。
 3. `config.yml.example` を `config.yml` にコピー・編集。
-4. `./mastobots` でボットを起動。systemdやscreenでバックグラウンド稼働を推奨。
+4. `config.yml` の `SudachiHome` にSudachiをインストールしたディレクトリを設定。このディレクトリには `sudachi-0.8.0.jar` と `sudachi.json` が必要です（例：`SudachiHome: /path/to/sudachi`）。実際の `config.yml` はGit管理対象外です。
+5. `./mastobots` でボットを起動。systemdやscreenでバックグラウンド稼働を推奨。
 
 ## クレジット
 

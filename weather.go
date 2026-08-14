@@ -33,11 +33,11 @@ type OWForcasts struct {
 }
 
 // isWeatherRelated は、文字列が天気関係の話かどうかを調べる。
-func (result jumanResult) isWeatherRelated() bool {
+func (result sudachiResult) isWeatherRelated() bool {
 	kws := [...]string{"天気", "気温", "気圧", "雷", "嵐", "暖", "暑", "雨", "晴", "曇", "雪", "風", "嵐", "雹", "湿", "乾", "冷える", "蒸す", "熱帯夜", "何度"}
 	for _, node := range result.Nodes {
 		for _, w := range kws {
-			if strings.Contains(node[11], w) {
+			if strings.Contains(node.surface, w) || strings.Contains(node.normalizedForm, w) || strings.Contains(node.dictionaryForm, w) {
 				return true
 			}
 		}
@@ -46,7 +46,7 @@ func (result jumanResult) isWeatherRelated() bool {
 }
 
 // judgeWeatherRequest は、天気の要望の内容を判断する
-func (result jumanResult) judgeWeatherRequest() (lc []string, dt int, fl bool, err error) {
+func (result sudachiResult) judgeWeatherRequest() (lc []string, dt int, fl bool, err error) {
 	lc = result.getWeatherQueryLocation()
 	dt = result.getWeatherQueryDate()
 	fl = result.getWeatherQueryTempType()
@@ -54,12 +54,11 @@ func (result jumanResult) judgeWeatherRequest() (lc []string, dt int, fl bool, e
 }
 
 // getWeatherQueryLocation は、天気情報の要望トゥートの形態素解析結果に地名が存在すればそれを返す。
-func (result jumanResult) getWeatherQueryLocation() (loc []string) {
+func (result sudachiResult) getWeatherQueryLocation() (loc []string) {
 	for _, node := range result.Nodes {
-		// 5番目の要素は品詞詳細、11番目の要素は諸情報
-		if node[5] == "地名" || node[5] == "人名" || strings.Contains(node[11], "地名") || strings.Contains(node[11], "場所") {
-			if node[0] != "周辺" && node[0] != "場所" && node[0] != "公園" && node[1] != "ところ" && node[1] != "あたり" && node[1] != "へん" && node[0] != "地域" && node[0] != "地区" && node[0] != "県" && node[0] != "市" && node[0] != "町" && node[0] != "村" && node[0] != "府" && node[0] != "州" && node[0] != "郡" && node[0] != "地方" && node[0] != "どうなん" {
-				loc = append(loc, node[0])
+		if node.isPlaceName() {
+			if node.surface != "周辺" && node.surface != "場所" && node.surface != "公園" && node.reading != "ところ" && node.reading != "あたり" && node.reading != "へん" && node.surface != "地域" && node.surface != "地区" && node.surface != "県" && node.surface != "市" && node.surface != "町" && node.surface != "村" && node.surface != "府" && node.surface != "州" && node.surface != "郡" && node.surface != "地方" && node.surface != "どうなん" {
+				loc = append(loc, node.surface)
 			}
 		}
 	}
@@ -67,9 +66,9 @@ func (result jumanResult) getWeatherQueryLocation() (loc []string) {
 }
 
 // getWeatherQueryDate は、天気情報の要望トゥートの形態素解析結果に日の指定があればそれを返す。
-func (result jumanResult) getWeatherQueryDate() (date int) {
+func (result sudachiResult) getWeatherQueryDate() (date int) {
 	for _, node := range result.Nodes {
-		switch node[1] {
+		switch node.reading {
 		case "あす", "あした", "みょうにち":
 			date = 1
 			return
@@ -85,9 +84,9 @@ func (result jumanResult) getWeatherQueryDate() (date int) {
 }
 
 // getWeatherQueryTempType は、天気情報の要望トゥートの形態素解析結果に体感温度表示の指定があればそれを返す。
-func (result jumanResult) getWeatherQueryTempType() (fl bool) {
+func (result sudachiResult) getWeatherQueryTempType() (fl bool) {
 	for _, node := range result.Nodes {
-		if node[0] == "体感" {
+		if node.surface == "体感" {
 			fl = true
 			return
 		}

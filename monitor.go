@@ -96,7 +96,7 @@ func (bot *Persona) respondToUpdate(ctx context.Context, ev *mastodon.UpdateEven
 	if text == "" {
 		return
 	}
-	result, err := parse(bot.commonSettings.langJobPool, text)
+	result, err := parse(bot.commonSettings, text)
 	if err != nil {
 		return
 	}
@@ -195,7 +195,7 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 		return
 	}
 	txt := textContent(status.Content)
-	res, err := parse(bot.commonSettings.langJobPool, txt)
+	res, err := parse(bot.commonSettings, txt)
 	if err != nil {
 		return
 	}
@@ -205,9 +205,9 @@ func (bot *Persona) respondToMention(ctx context.Context, account mastodon.Accou
 		log.Printf("info: %s がふぁぼを諦めました", bot.Name)
 	}
 
-	var jm jumanResult
+	var jm sudachiResult
 	var ok bool
-	if jm, ok = res.(jumanResult); !ok {
+	if jm, ok = res.(sudachiResult); !ok {
 		log.Printf("info: %sに送られたメッセージは日本語ではありません", bot.Name)
 		return
 	}

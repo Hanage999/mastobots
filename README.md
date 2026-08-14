@@ -3,9 +3,9 @@
 [![en](https://img.shields.io/badge/lang-en-red.svg)](https://github.com/Hanage999/mastobots/blob/master/README.md)
 [![ja](https://img.shields.io/badge/lang-ja-green.svg)](https://github.com/Hanage999/mastobots/blob/master/README.ja.md)
 
-A customizable Mastodon bot that periodically retrieves RSS feed items containing specified keywords, analyzes them in Japanese (using Juman++) or English (using Prose), and then posts automatically-generated Japanese comments. It also responds to mentions and provides weather information.
+A customizable Mastodon bot that periodically retrieves RSS feed items containing specified keywords, analyzes them in Japanese (using Sudachi) or English (using Prose), and then posts automatically-generated Japanese comments. It also responds to mentions and provides weather information.
 
-RSS feed items are stored in a MySQL database and analyzed for relevant keywords. Japanese items are parsed with Juman++, and English items are processed using Prose, but all posts are generated in Japanese.
+RSS feed items are stored in a MySQL database and analyzed for relevant keywords. Japanese items are parsed with Sudachi, and English items are processed using Prose, but all posts are generated in Japanese.
 
 Populate RSS items into the database beforehand using tools such as [feedAggregator](https://blog.crazynewworld.net/2018/10/29/323/).
 
@@ -16,7 +16,8 @@ Configure multiple bots simultaneously via the `config.yml` file.
 Install the following before running:
 
 - MySQL
-- [Juman++ 2.0.0-rc3](http://nlp.ist.i.kyoto-u.ac.jp/index.php?JUMAN++)
+- Java
+- [Sudachi 0.8.0](https://github.com/WorksApplications/Sudachi/releases/tag/v0.8.0)
 
 ## Features
 
@@ -35,7 +36,8 @@ Install the following before running:
 1. Import the schema (`database_tables.sql`) into your MySQL database and periodically populate RSS items (e.g., using feedAggregator).
 2. In `cmd/mastobots`, run `go build` to compile the `mastobots` binary.
 3. Copy `config.yml.example` to `config.yml` and edit accordingly.
-4. Launch the bot with `./mastobots`. Using systemd or screen for background execution is recommended.
+4. Set `SudachiHome` in `config.yml` to the Sudachi installation directory. It must contain `sudachi-0.8.0.jar` and `sudachi.json` (for example, `SudachiHome: /path/to/sudachi`). The actual `config.yml` is excluded from version control.
+5. Launch the bot with `./mastobots`. Using systemd or screen for background execution is recommended.
 
 ## Credits
 

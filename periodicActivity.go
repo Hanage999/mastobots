@@ -130,9 +130,9 @@ func (bot *Persona) messageFromItem(item Item) (msg string, lang string, err err
 
 	log.Printf("trace: id %d 形態素解析に食わせるcontent：%s", item.ID, txt)
 
-	result, err := parse(bot.commonSettings.langJobPool, txt)
+	result, err := parse(bot.commonSettings, txt)
 	if err != nil {
-		log.Printf("info: %s がトゥート時のサマリーのパースに失敗しました", bot.Name)
+		log.Printf("info: %s がトゥート時のサマリーのパースに失敗しました：%s", bot.Name, err)
 		return
 	}
 
@@ -173,7 +173,7 @@ func (bot *Persona) messageFromItem(item Item) (msg string, lang string, err err
 
 		// 投稿言語の設定
 		switch result.(type) {
-		case jumanResult:
+		case sudachiResult:
 			lang = "ja"
 		case proseResult:
 			lang = "en"
