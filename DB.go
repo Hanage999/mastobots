@@ -162,6 +162,7 @@ func (db DB) stockItems(bot *Persona) (inStock int, err error) {
 	tb := time.Now()
 
 	myItems := make([]Item, 0)
+	parseFailed := false
 	for _, item := range items {
 		sumStr := item.Title
 		if item.Summary != item.Title {
@@ -169,7 +170,8 @@ func (db DB) stockItems(bot *Persona) (inStock int, err error) {
 		}
 		result, err := parse(bot.commonSettings, sumStr)
 		if err != nil {
-			log.Printf("info: id: %d のサマリーのパースに失敗しました", item.ID)
+			parseFailed = true
+			log.Printf("info: id: %d のサマリーのパースに失敗しました：%s。解析対象：%q", item.ID, err, textPreview(sumStr, 300))
 			continue
 		}
 
@@ -217,17 +219,21 @@ func (db DB) stockItems(bot *Persona) (inStock int, err error) {
 	if len(items) == 0 {
 		return
 	}
-	_, err = db.Exec(`
-		UPDATE bots
-		SET checked_until = ?, updated_at = ?
-		WHERE id = ?`,
-		items[0].ID,
-		time.Now(),
-		bot.DBID,
-	)
-	if err != nil {
-		log.Printf("info: %s のchecked_untilが更新できませんでした：%s", bot.Name, err)
-		return
+	if parseFailed {
+		log.Printf("info: %s のサマリー解析に失敗があったためchecked_untilを更新せず、次回再試行します", bot.Name)
+	} else {
+		_, err = db.Exec(`
+			UPDATE bots
+			SET checked_until = ?, updated_at = ?
+			WHERE id = ?`,
+			items[0].ID,
+			time.Now(),
+			bot.DBID,
+		)
+		if err != nil {
+			log.Printf("info: %s のchecked_untilが更新できませんでした：%s", bot.Name, err)
+			return
+		}
 	}
 
 	// candidatesの数を取得
@@ -247,6 +253,15 @@ func (db DB) stockItems(bot *Persona) (inStock int, err error) {
 	}
 
 	return
+}
+
+func textPreview(text string, maxRunes int) string {
+	text = strings.Join(strings.Fields(text), " ")
+	runes := []rune(text)
+	if maxRunes <= 0 || len(runes) <= maxRunes {
+		return text
+	}
+	return string(runes[:maxRunes]) + "…"
 }
 
 // pickItemは、candidateから一件のitemをランダムで選択する。

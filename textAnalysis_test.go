@@ -270,6 +270,12 @@ func TestNewSudachiClientRejectsInvalidURL(t *testing.T) {
 	}
 }
 
+func TestTextPreview(t *testing.T) {
+	if got := textPreview("見出し\n  本文\t続き", 6); got != "見出し 本文…" {
+		t.Errorf("textPreview() = %q", got)
+	}
+}
+
 func newSudachiMorpheme(surface, pos0, pos1, pos2 string) sudachiMorpheme {
 	return sudachiMorpheme{
 		surface:        surface,
