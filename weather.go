@@ -70,12 +70,20 @@ func (result sudachiResult) getWeatherQueryDate() (date int) {
 	for _, node := range result.Nodes {
 		switch node.reading {
 		case "あす", "あした", "みょうにち":
+			return 1
+		case "あさって", "みょうごにち":
+			return 2
+		case "いま", "げんざい":
+			return -1
+		}
+		switch node.normalizedForm {
+		case "明日":
 			date = 1
 			return
-		case "あさって", "みょうごにち":
+		case "明後日":
 			date = 2
 			return
-		case "いま", "げんざい":
+		case "今", "現在":
 			date = -1
 			return
 		}

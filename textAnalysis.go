@@ -2,13 +2,16 @@ package mastobots
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"math/rand"
-	"os/exec"
-	"strconv"
+	"net/http"
+	"net/url"
 	"strings"
+	"time"
 	"unicode"
 
 	"golang.org/x/net/html"
@@ -39,6 +42,46 @@ var jumanFormalNounDictionaryForms = map[string]struct{}{
 	"つもり": {},
 	"もの":  {},
 	"もん":  {},
+}
+
+const (
+	sudachiSplitMode           = "B"
+	defaultSudachiAPITimeout   = 20 * time.Second
+	maxSudachiAPIResponseBytes = 16 << 20
+)
+
+type sudachiClient struct {
+	endpoint   string
+	httpClient *http.Client
+}
+
+type sudachiAPIRequest struct {
+	Text string `json:"text"`
+	Mode string `json:"mode"`
+}
+
+type sudachiAPIResponse struct {
+	Tokens []sudachiAPIToken `json:"tokens"`
+	Count  int               `json:"count"`
+	Mode   string            `json:"mode"`
+}
+
+type sudachiAPIToken struct {
+	Surface         string   `json:"surface"`
+	PartOfSpeech    []string `json:"part_of_speech"`
+	NormalizedForm  string   `json:"normalized_form"`
+	DictionaryForm  *string  `json:"dictionary_form"`
+	ReadingForm     *string  `json:"reading_form"`
+	DictionaryID    *int     `json:"dictionary_id"`
+	SynonymGroupIDs *[]int   `json:"synonym_group_ids"`
+	OOV             *bool    `json:"oov"`
+}
+
+type sudachiAPIErrorResponse struct {
+	Error struct {
+		Code    string `json:"code"`
+		Message string `json:"message"`
+	} `json:"error"`
 }
 
 // sudachiMorpheme は、Sudachiで解析した一つの形態素を格納する。
@@ -75,7 +118,7 @@ func (result proseResult) length() int {
 func (result sudachiResult) candidates() (cds []candidate) {
 	cds = make([]candidate, 0)
 	for _, node := range result.Nodes {
-		if node.surface == "" || node.reading == "" || !node.isNoun() || node.isNumericNoun() || node.isJumanFormalNoun() {
+		if node.surface == "" || !node.isNoun() || node.isNumericNoun() || node.isJumanFormalNoun() {
 			continue
 		}
 		cd := candidate{node.surface, string(getRuneAt(node.reading, 0)), rand.Intn(2000)}
@@ -116,7 +159,7 @@ func (result proseResult) candidates() (cds []candidate) {
 
 func (result sudachiResult) contain(str string) bool {
 	for _, node := range result.Nodes {
-		if node.dictionaryForm == str || node.normalizedForm == str {
+		if node.dictionaryForm == str || node.normalizedForm == str || node.surface == str {
 			log.Printf("trace: 一致した単語：%s", str)
 			return true
 		}
@@ -182,83 +225,119 @@ func parseEnglish(text string) (proseResult, error) {
 	return proseResult{tks, etts}, nil
 }
 
-// parseJapanese は、日本語のテキストをSudachiで形態素解析して結果を返す。
-func parseJapanese(settings sudachiSettings, text string) (result sudachiResult, err error) {
-	cmd := exec.Command("java", "-jar", settings.jarPath, "-r", settings.configPath, "-a")
-	if !strings.HasSuffix(text, "\n") {
-		text += "\n"
+func newSudachiClient(endpoint string, timeout time.Duration) (*sudachiClient, error) {
+	endpoint = strings.TrimSpace(endpoint)
+	if endpoint == "" {
+		return nil, fmt.Errorf("設定項目 SudachiAPIURL が設定されていません")
 	}
-	cmd.Stdin = strings.NewReader(text)
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-	out, err := cmd.Output()
-	if err != nil {
-		detail := strings.TrimSpace(stderr.String())
-		if detail != "" {
-			err = fmt.Errorf("Sudachiの実行に失敗しました：%w（%s）", err, detail)
-		}
-		log.Printf("info: 形態素解析器が正常に起動できませんでした：%s", err)
-		return
+	parsed, err := url.Parse(endpoint)
+	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
+		return nil, fmt.Errorf("SudachiAPIURL が正しいHTTP URLではありません：%q", endpoint)
 	}
-
-	return parseSudachiOutput(out)
+	if parsed.User != nil || parsed.RawQuery != "" || parsed.Fragment != "" {
+		return nil, fmt.Errorf("SudachiAPIURL にユーザー情報、クエリ、フラグメントは指定できません")
+	}
+	if !strings.HasSuffix(strings.TrimRight(parsed.Path, "/"), "/v1/analyze") {
+		return nil, fmt.Errorf("SudachiAPIURL に /v1/analyze エンドポイントを指定してください")
+	}
+	if timeout <= 0 {
+		timeout = defaultSudachiAPITimeout
+	}
+	return &sudachiClient{
+		endpoint:   strings.TrimRight(endpoint, "/"),
+		httpClient: &http.Client{Timeout: timeout},
+	}, nil
 }
 
-// parseSudachiOutput は、Sudachiの -a 出力をアプリ内の解析結果へ変換する。
-// 列は表層形、品詞6階層、正規化形、辞書形、読み、辞書ID、同義語グループID、OOVフラグの順。
-func parseSudachiOutput(out []byte) (result sudachiResult, err error) {
-	nodes := make([]sudachiMorpheme, 0)
-	for _, line := range strings.Split(string(out), "\n") {
-		line = strings.TrimSuffix(line, "\r")
-		if line == "" || line == "EOS" {
-			continue
-		}
+// parseJapanese は、日本語のテキストをSudachi HTTP APIで形態素解析して結果を返す。
+func parseJapanese(client *sudachiClient, text string) (result sudachiResult, err error) {
+	requestBody, err := json.Marshal(sudachiAPIRequest{Text: text, Mode: sudachiSplitMode})
+	if err != nil {
+		return sudachiResult{}, fmt.Errorf("Sudachi APIリクエストを作成できません：%w", err)
+	}
+	request, err := http.NewRequest(http.MethodPost, client.endpoint, bytes.NewReader(requestBody))
+	if err != nil {
+		return sudachiResult{}, fmt.Errorf("Sudachi APIリクエストを作成できません：%w", err)
+	}
+	request.Header.Set("Content-Type", "application/json")
 
-		columns := strings.Split(line, "\t")
-		if len(columns) < 8 {
-			return sudachiResult{nodes}, fmt.Errorf("異常なSudachi解析結果：%q", line)
-		}
+	response, err := client.httpClient.Do(request)
+	if err != nil {
+		return sudachiResult{}, fmt.Errorf("Sudachi APIへの接続に失敗しました：%w", err)
+	}
+	defer response.Body.Close()
 
-		parts := strings.Split(columns[1], ",")
-		if len(parts) != 6 {
-			return sudachiResult{nodes}, fmt.Errorf("異常なSudachi品詞情報：%q", columns[1])
+	body, err := io.ReadAll(io.LimitReader(response.Body, maxSudachiAPIResponseBytes+1))
+	if err != nil {
+		return sudachiResult{}, fmt.Errorf("Sudachi APIレスポンスを読み込めません：%w", err)
+	}
+	if len(body) > maxSudachiAPIResponseBytes {
+		return sudachiResult{}, fmt.Errorf("Sudachi APIレスポンスが大きすぎます")
+	}
+	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
+		return sudachiResult{}, parseSudachiAPIError(response.StatusCode, body)
+	}
+
+	var apiResponse sudachiAPIResponse
+	if err := json.Unmarshal(body, &apiResponse); err != nil {
+		return sudachiResult{}, fmt.Errorf("Sudachi APIレスポンスが不正です：%w", err)
+	}
+	if apiResponse.Mode != sudachiSplitMode {
+		return sudachiResult{}, fmt.Errorf("Sudachi APIレスポンスの分割モードが不正です：%q", apiResponse.Mode)
+	}
+	if apiResponse.Count != len(apiResponse.Tokens) {
+		return sudachiResult{}, fmt.Errorf("Sudachi APIレスポンスの形態素数が一致しません：count=%d tokens=%d", apiResponse.Count, len(apiResponse.Tokens))
+	}
+	if len(apiResponse.Tokens) == 0 {
+		return sudachiResult{}, fmt.Errorf("Sudachi APIの解析結果に形態素がありません")
+	}
+
+	nodes := make([]sudachiMorpheme, 0, len(apiResponse.Tokens))
+	for i, token := range apiResponse.Tokens {
+		if token.Surface == "" {
+			return sudachiResult{Nodes: nodes}, fmt.Errorf("Sudachi APIの%d個目の形態素が不正です：表層形が空です", i+1)
+		}
+		if token.NormalizedForm == "" {
+			return sudachiResult{Nodes: nodes}, fmt.Errorf("Sudachi APIの%d個目の形態素が不正です：正規化形が空です", i+1)
+		}
+		if len(token.PartOfSpeech) != 6 {
+			return sudachiResult{Nodes: nodes}, fmt.Errorf("Sudachi APIの%d個目の形態素が不正です：品詞階層数が%dです", i+1, len(token.PartOfSpeech))
+		}
+		if token.DictionaryForm == nil || token.ReadingForm == nil || token.DictionaryID == nil || token.SynonymGroupIDs == nil || token.OOV == nil {
+			return sudachiResult{Nodes: nodes}, fmt.Errorf("Sudachi APIの%d個目の形態素が不正です：-aの追加フィールドが不足しています", i+1)
 		}
 		var partOfSpeech [6]string
-		copy(partOfSpeech[:], parts)
-
-		dictionaryID, conversionErr := strconv.Atoi(columns[5])
-		if conversionErr != nil {
-			return sudachiResult{nodes}, fmt.Errorf("異常なSudachi辞書ID：%q", columns[5])
+		copy(partOfSpeech[:], token.PartOfSpeech)
+		dictionaryForm := *token.DictionaryForm
+		if dictionaryForm == "" || dictionaryForm == "*" {
+			dictionaryForm = token.NormalizedForm
 		}
-		synonymGroupIDs, conversionErr := parseSudachiIDList(columns[6])
-		if conversionErr != nil {
-			return sudachiResult{nodes}, fmt.Errorf("異常なSudachi同義語グループID：%q", columns[6])
-		}
-
-		reading := columns[4]
+		reading := *token.ReadingForm
 		if reading == "" || reading == "*" {
-			reading = columns[0]
+			reading = token.Surface
 		} else {
 			reading = katakanaToHiragana(reading)
 		}
-
 		nodes = append(nodes, sudachiMorpheme{
-			surface:         columns[0],
+			surface:         token.Surface,
 			partOfSpeech:    partOfSpeech,
-			normalizedForm:  columns[2],
-			dictionaryForm:  columns[3],
+			normalizedForm:  token.NormalizedForm,
+			dictionaryForm:  dictionaryForm,
 			reading:         reading,
-			dictionaryID:    dictionaryID,
-			synonymGroupIDs: synonymGroupIDs,
-			isOOV:           dictionaryID < 0 || columns[7] == "(OOV)",
+			dictionaryID:    *token.DictionaryID,
+			synonymGroupIDs: *token.SynonymGroupIDs,
+			isOOV:           *token.OOV,
 		})
 	}
+	return sudachiResult{Nodes: nodes}, nil
+}
 
-	if len(nodes) == 0 {
-		return sudachiResult{}, fmt.Errorf("Sudachiの解析結果に形態素がありません（出力: %q）", truncateText(strings.TrimSpace(string(out)), 200))
+func parseSudachiAPIError(statusCode int, body []byte) error {
+	var apiError sudachiAPIErrorResponse
+	if err := json.Unmarshal(body, &apiError); err == nil && apiError.Error.Code != "" {
+		return fmt.Errorf("Sudachi APIがエラーを返しました（HTTP %d, %s）：%s", statusCode, apiError.Error.Code, apiError.Error.Message)
 	}
-
-	return sudachiResult{nodes}, nil
+	return fmt.Errorf("Sudachi APIがエラーを返しました（HTTP %d）", statusCode)
 }
 
 func (result sudachiResult) summary(limit int) string {
@@ -270,36 +349,6 @@ func (result sudachiResult) summary(limit int) string {
 		items = append(items, fmt.Sprintf("%s[%s]", node.surface, strings.Join(node.partOfSpeech[:], ",")))
 	}
 	return strings.Join(items, " ")
-}
-
-func truncateText(text string, maxRunes int) string {
-	runes := []rune(text)
-	if len(runes) <= maxRunes {
-		return text
-	}
-	return string(runes[:maxRunes]) + "…"
-}
-
-func parseSudachiIDList(text string) ([]int, error) {
-	text = strings.TrimSpace(text)
-	if len(text) < 2 || text[0] != '[' || text[len(text)-1] != ']' {
-		return nil, fmt.Errorf("角括弧で囲まれていません")
-	}
-	text = strings.TrimSpace(text[1 : len(text)-1])
-	if text == "" {
-		return []int{}, nil
-	}
-
-	values := strings.Split(text, ",")
-	ids := make([]int, 0, len(values))
-	for _, value := range values {
-		id, err := strconv.Atoi(strings.TrimSpace(value))
-		if err != nil {
-			return nil, err
-		}
-		ids = append(ids, id)
-	}
-	return ids, nil
 }
 
 func (m sudachiMorpheme) isNoun() bool {

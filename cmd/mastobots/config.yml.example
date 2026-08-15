@@ -9,8 +9,9 @@ YahooClientID: ***  # Yahoo!のYOLP Web APIを使うためのClient ID。https:/
 
 OpenWeatherMapKey: ***   # 天気予報サービス  (https://openweathermap.org/) One Call API 3.0（要登録）のためのAPIキー
 
-NumConcurrentLangJobs: 4    # 言語解析ジョブの同時実行数の上限（多すぎるとメモリ使いすぎでアプリが落ちる。1〜10を指定可）
-SudachiHome: /path/to/sudachi    # sudachi-0.8.0.jar と sudachi.json があるディレクトリ
+NumConcurrentLangJobs: 2    # 言語解析ジョブの同時実行数の上限。Sudachi API側の同時実行上限以下を推奨（1〜10を指定可）
+SudachiAPIURL: http://sudachi-host:8080/v1/analyze  # LAN内のSudachi HTTP API解析エンドポイント
+SudachiAPITimeout: 20s    # APIの解析待ちを含むHTTPタイムアウト
 
 Personae:   # 各botの情報
     -   Name: mybot

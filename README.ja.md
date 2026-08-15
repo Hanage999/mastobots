@@ -16,8 +16,7 @@ RSSアイテムをデータベースに取り込むには、[feedAggregator](htt
 事前に以下をインストールしてください。
 
 - MySQL
-- Java
-- [Sudachi 0.8.0](https://github.com/WorksApplications/Sudachi/releases/tag/v0.8.0)
+- LAN内から利用でき、Sudachi `-a` の全フィールドを返すSudachi HTTP API（`POST /v1/analyze`）
 
 ## 主な機能
 
@@ -36,8 +35,11 @@ RSSアイテムをデータベースに取り込むには、[feedAggregator](htt
 1. `database_tables.sql` をMySQLデータベースにインポートし、feedAggregator等でRSSアイテムを定期取得。
 2. `cmd/mastobots` 内で `go build` し、`mastobots` 実行ファイルを作成。
 3. `config.yml.example` を `config.yml` にコピー・編集。
-4. `config.yml` の `SudachiHome` にSudachiをインストールしたディレクトリを設定。このディレクトリには `sudachi-0.8.0.jar` と `sudachi.json` が必要です（例：`SudachiHome: /path/to/sudachi`）。実際の `config.yml` はGit管理対象外です。
+4. `config.yml` の `SudachiAPIURL` にSudachi HTTP APIの解析エンドポイントを設定（例：`http://sudachi-host:8080/v1/analyze`）。必要に応じて `SudachiAPITimeout` も調整します。実際の `config.yml` はGit管理対象外です。
 5. `./mastobots` でボットを起動。systemdやscreenでバックグラウンド稼働を推奨。
+
+`NumConcurrentLangJobs` はSudachi API側の `SUDACHI_API_MAX_CONCURRENT` 以下にすると、API内部での待機とタイムアウトを抑えられます。
+Sudachiの分割モードは `B` を使用します。
 
 ## クレジット
 

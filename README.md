@@ -16,8 +16,7 @@ Configure multiple bots simultaneously via the `config.yml` file.
 Install the following before running:
 
 - MySQL
-- Java
-- [Sudachi 0.8.0](https://github.com/WorksApplications/Sudachi/releases/tag/v0.8.0)
+- A Sudachi HTTP API reachable over the LAN that returns every Sudachi `-a` field (`POST /v1/analyze`)
 
 ## Features
 
@@ -36,8 +35,11 @@ Install the following before running:
 1. Import the schema (`database_tables.sql`) into your MySQL database and periodically populate RSS items (e.g., using feedAggregator).
 2. In `cmd/mastobots`, run `go build` to compile the `mastobots` binary.
 3. Copy `config.yml.example` to `config.yml` and edit accordingly.
-4. Set `SudachiHome` in `config.yml` to the Sudachi installation directory. It must contain `sudachi-0.8.0.jar` and `sudachi.json` (for example, `SudachiHome: /path/to/sudachi`). The actual `config.yml` is excluded from version control.
+4. Set `SudachiAPIURL` in `config.yml` to the Sudachi HTTP API analysis endpoint (for example, `http://sudachi-host:8080/v1/analyze`). Adjust `SudachiAPITimeout` if necessary. The actual `config.yml` is excluded from version control.
 5. Launch the bot with `./mastobots`. Using systemd or screen for background execution is recommended.
+
+Set `NumConcurrentLangJobs` no higher than the API's `SUDACHI_API_MAX_CONCURRENT` to reduce queueing and timeouts inside the API.
+Sudachi split mode `B` is used.
 
 ## Credits
 
