@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	mastodon "github.com/hanage999/go-mastodon"
+	mastodon "github.com/mattn/go-mastodon"
 )
 
 // periodicActivityは、指定された時刻（分）を皮切りに一定時間ごとに行う活動。

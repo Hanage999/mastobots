@@ -1,15 +1,13 @@
 module github.com/hanage999/mastobots
 
-go 1.23.0
-
-toolchain go1.23.1
+go 1.25
 
 replace gopkg.in/jdkato/prose.v2 => github.com/jdkato/prose/v2 v2.0.0
 
 require (
 	github.com/comail/colog v0.0.0-20160416085026-fba8e7b1f46c
 	github.com/go-sql-driver/mysql v1.8.1
-	github.com/hanage999/go-mastodon v0.0.5-0.20241102235614-74e9cd061858
+	github.com/mattn/go-mastodon v0.0.13
 	github.com/ringsaturn/tzf v0.16.0
 	github.com/spf13/viper v1.19.0
 	golang.org/x/net v0.38.0
@@ -38,7 +36,7 @@ require (
 	github.com/tidwall/geoindex v1.7.0 // indirect
 	github.com/tidwall/geojson v1.4.5 // indirect
 	github.com/tidwall/rtree v1.10.0 // indirect
-	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80 // indirect
+	github.com/tomnomnom/linkheader v0.0.0-20250811210735-e5fe3b51442e // indirect
 	github.com/twpayne/go-polyline v1.1.1 // indirect
 	go.mongodb.org/mongo-driver v1.17.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect

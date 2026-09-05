@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	mastodon "github.com/hanage999/go-mastodon"
+	mastodon "github.com/mattn/go-mastodon"
 )
 
 // moitorは、websocketでタイムラインを監視して反応する。
