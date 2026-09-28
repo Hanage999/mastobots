@@ -15,6 +15,7 @@ import (
 	"unicode"
 
 	"golang.org/x/net/html"
+	"golang.org/x/text/unicode/norm"
 	"gopkg.in/jdkato/prose.v2"
 )
 
@@ -251,6 +252,7 @@ func newSudachiClient(endpoint string, timeout time.Duration) (*sudachiClient, e
 
 // parseJapanese は、日本語のテキストをSudachi HTTP APIで形態素解析して結果を返す。
 func parseJapanese(client *sudachiClient, text string) (result sudachiResult, err error) {
+	text = removeCombiningMarks(text)
 	requestBody, err := json.Marshal(sudachiAPIRequest{Text: text, Mode: sudachiSplitMode})
 	if err != nil {
 		return sudachiResult{}, fmt.Errorf("Sudachi APIリクエストを作成できません：%w", err)
@@ -330,6 +332,47 @@ func parseJapanese(client *sudachiClient, text string) (result sudachiResult, er
 		})
 	}
 	return sudachiResult{Nodes: nodes}, nil
+}
+
+// removeCombiningMarks は、Sudachi 0.8.2 が解析に失敗する原因になる結合文字を
+// 取り除く。0.8.2 の char.def は結合ダイアクリティカルマーク類・異体字セレクタ・
+// 肌色修飾子を「ALL NOOOVBOW」に分類しており、これらが仮名や漢字などの直後に付き、
+// さらに英字が続くと「EOS isn't connected to BOS」で失敗する（例：「⚫︎A」）。
+// Sudachi は解析前に入力を NFKC 正規化するので、「￣」「´」のように正規化で
+// 結合文字を含む形に分解される文字も同じく失敗する。どれも解析結果の利用には
+// 関係しないので、正規化後にこれらを含むことになる文字ごと落としておく。
+func removeCombiningMarks(text string) string {
+	return strings.Map(func(r rune) rune {
+		if isNoOOVBOWMark(r) {
+			return -1
+		}
+		if r < 0x80 {
+			return r
+		}
+		for _, d := range norm.NFKC.String(string(r)) {
+			if isNoOOVBOWMark(d) {
+				return -1
+			}
+		}
+		return r
+	}, text)
+}
+
+// isNoOOVBOWMark は、Sudachi 0.8.2 の char.def で「ALL NOOOVBOW」に分類された
+// 結合文字かどうかを判定する。
+func isNoOOVBOWMark(r rune) bool {
+	switch {
+	case r >= 0x0300 && r <= 0x036F, // Combining Diacritical Marks
+		r >= 0x1AB0 && r <= 0x1AFF,   // Combining Diacritical Marks Extended
+		r >= 0x1DC0 && r <= 0x1DFF,   // Combining Diacritical Marks Supplement
+		r >= 0x20D0 && r <= 0x20FF,   // Combining Diacritical Marks for Symbols
+		r >= 0xFE20 && r <= 0xFE2F,   // Combining Half Marks
+		r >= 0xFE00 && r <= 0xFE0F,   // Variation Selectors
+		r >= 0x1F3FB && r <= 0x1F3FE: // Emoji skin tone modifiers
+		return true
+	default:
+		return false
+	}
 }
 
 func parseSudachiAPIError(statusCode int, body []byte) error {

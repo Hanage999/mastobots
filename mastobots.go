@@ -154,7 +154,7 @@ func ActivateBots(bots []*Persona, db DB, p int) (err error) {
 		ctx, cancel = context.WithTimeout(ctx, dur)
 		defer cancel()
 	}
-	log.Printf("info: " + msg)
+	log.Printf("info: %s", msg)
 
 	// 行ってらっしゃい
 	for _, bot := range bots {

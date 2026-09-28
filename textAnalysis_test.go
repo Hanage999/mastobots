@@ -285,3 +285,60 @@ func newSudachiMorpheme(surface, pos0, pos1, pos2 string) sudachiMorpheme {
 		reading:        surface,
 	}
 }
+
+func TestParseJapaneseRemovesVariationSelectors(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var request sudachiAPIRequest
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			t.Fatal(err)
+		}
+		// Sudachi 0.8.2 は結合文字の直後に英字が続くと解析に失敗するので、送る前に除く。
+		if request.Text != "編集⚫ASCIIです" {
+			t.Errorf("request.Text = %q, want %q", request.Text, "編集⚫ASCIIです")
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"tokens": [
+				{"surface":"です","part_of_speech":["助動詞","*","*","*","助動詞-デス","終止形-一般"],"normalized_form":"です","dictionary_form":"です","reading_form":"デス","dictionary_id":0,"synonym_group_ids":[],"oov":false}
+			],
+			"count": 1,
+			"mode": "B"
+		}`))
+	}))
+	defer server.Close()
+
+	client, err := newSudachiClient(server.URL+"/v1/analyze", time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := parseJapanese(client, "編集⚫\ufe0eASCIIです"); err != nil {
+		t.Fatalf("parseJapanese() error = %v", err)
+	}
+}
+
+func TestRemoveCombiningMarks(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		// Sudachi 0.8.2 で解析に失敗した記事の一部。
+		{"異体字セレクタ", "編集⚫\ufe0eASCII ❤\ufe0fThanks", "編集⚫ASCII ❤Thanks"},
+		{"NFKCで結合文字に分解される全角マクロン", "じゃない＜ ￣Y^Y^", "じゃない＜ Y^Y^"},
+		{"スペーシングアクセント", "あ´A あ˜A あ¸A", "あA あA あA"},
+		{"結合アクセント", "cafe\u0301です", "cafeです"},
+		{"肌色修飾子", "いいね👍\U0001F3FBOK", "いいね👍OK"},
+		// 合成済みの文字や、0.8.2で問題の出ない文字はそのまま残す。
+		{"合成済みのアクセント付き文字", "caféです", "caféです"},
+		{"漢字の異体字（IVS）", "葛\U000E0100城", "葛\U000E0100城"},
+		{"濁点・半濁点", "あ゛A あ゜A", "あ゛A あ゜A"},
+		{"ZWJ", "家族👨\u200d👩です", "家族👨\u200d👩です"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := removeCombiningMarks(tt.in); got != tt.want {
+				t.Errorf("removeCombiningMarks(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
